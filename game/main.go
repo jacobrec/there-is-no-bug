@@ -1,10 +1,10 @@
 package main
 
 import (
-	phys "github.com/chunqian/go-raylib/physac"
-	rl "github.com/chunqian/go-raylib/raylib"
+	phys "github.com/gen2brain/raylib-go/physics"
+	gui "github.com/gen2brain/raylib-go/raygui"
+	rl "github.com/gen2brain/raylib-go/raylib"
 
-	"fmt"
 	"runtime"
 	"unsafe"
 )
@@ -12,25 +12,21 @@ import (
 const screenWidth = int32(800)
 const screenHeight = int32(450)
 
-func v2(x, y float32) phys.Vector2 {
-	return phys.NewVector2(x, y)
-}
-
 func loop(gs *GameState) {
 
-	keyLeft := rl.IsKeyDown(int32(rl.KEY_LEFT)) ||
-		rl.IsKeyDown(int32(rl.KEY_A)) ||
-		rl.IsKeyDown(int32(rl.KEY_H))
-	keyRight := rl.IsKeyDown(int32(rl.KEY_RIGHT)) ||
-		rl.IsKeyDown(int32(rl.KEY_D)) ||
-		rl.IsKeyDown(int32(rl.KEY_L))
-	keyJump := rl.IsKeyDown(int32(rl.KEY_SPACE)) ||
-		rl.IsKeyDown(int32(rl.KEY_W)) ||
-		rl.IsKeyDown(int32(rl.KEY_K)) ||
-		rl.IsKeyDown(int32(rl.KEY_UP))
-	keyDown := rl.IsKeyDown(int32(rl.KEY_S)) ||
-		rl.IsKeyDown(int32(rl.KEY_J)) ||
-		rl.IsKeyDown(int32(rl.KEY_DOWN))
+	keyLeft := rl.IsKeyDown(int32(rl.KeyLeft)) ||
+		rl.IsKeyDown(int32(rl.KeyA)) ||
+		rl.IsKeyDown(int32(rl.KeyH))
+	keyRight := rl.IsKeyDown(int32(rl.KeyRight)) ||
+		rl.IsKeyDown(int32(rl.KeyD)) ||
+		rl.IsKeyDown(int32(rl.KeyL))
+	keyJump := rl.IsKeyDown(int32(rl.KeySpace)) ||
+		rl.IsKeyDown(int32(rl.KeyW)) ||
+		rl.IsKeyDown(int32(rl.KeyK)) ||
+		rl.IsKeyDown(int32(rl.KeyUp))
+	keyDown := rl.IsKeyDown(int32(rl.KeyS)) ||
+		rl.IsKeyDown(int32(rl.KeyJ)) ||
+		rl.IsKeyDown(int32(rl.KeyDown))
 
 	shouldLeft := keyLeft && !keyRight
 	shouldRight := keyRight && !keyLeft
@@ -46,22 +42,16 @@ func loop(gs *GameState) {
 		gs.player.Velocity.Y = 5 * -moveForce
 	}
 
-	phys.RunPhysicsStep()
+	phys.Update()
 
-	if rl.IsKeyPressed(int32(rl.KEY_R)) {
-		gs.player.Enabled = true
-		gs.player.Position = v2(float32(screenWidth/2), float32(screenHeight/2))
-		gs.player.Velocity = v2(0, 0)
-	}
-
-	bodiesCount := phys.GetPhysicsBodiesCount()
+	bodiesCount := phys.GetBodiesCount()
 	for i := bodiesCount - 1; i >= 0; i-- {
-		body := phys.GetPhysicsBody(i)
+		body := phys.GetBody(i)
 		if body != nil && int32(body.Position.Y) > screenHeight*2 {
 			if body == gs.player {
 				gs.player.Enabled = false
 			} else {
-				phys.DestroyPhysicsBody(body)
+				phys.DestroyBody(body)
 			}
 		}
 	}
@@ -70,27 +60,33 @@ func loop(gs *GameState) {
 
 	rl.ClearBackground(rl.Black)
 
+	buttonClicked := gui.Button(rl.NewRectangle(10, 30, 50, 20), "Reset")
+	_ = buttonClicked
+	if rl.IsKeyPressed(int32(rl.KeyR)) || buttonClicked {
+		gs.player.Enabled = true
+		gs.player.Position = rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2))
+		gs.player.Velocity = rl.NewVector2(0, 0)
+	}
+
 	rl.DrawFPS(screenWidth-90, screenHeight-30)
 
-	bodiesCount = phys.GetPhysicsBodiesCount()
-	rl.DrawText(fmt.Sprintf("There are currently %v bodies", bodiesCount), 10, 40, 10, rl.White)
-	rl.DrawText(fmt.Sprintf("player on ground: %v", gs.player.IsGrounded), 10, 55, 10, rl.White)
-	for i := int32(0); i < bodiesCount; i++ {
-		body := phys.GetPhysicsBody(i)
+	bodiesCount = phys.GetBodiesCount()
+	for i := 0; i < bodiesCount; i++ {
+		body := phys.GetBody(i)
 
 		if body != nil {
-			vertexCount := phys.GetPhysicsShapeVerticesCount(i)
-			for j := int32(0); j < vertexCount; j++ {
-				vertexA := phys.GetPhysicsShapeVertex(body, j)
+			vertexCount := phys.GetShapeVerticesCount(i)
+			for j := 0; j < vertexCount; j++ {
+				vertexA := body.GetShapeVertex(j)
 
-				var jj int32
+				var jj int
 				if j+1 < vertexCount {
 					jj = j + 1
 				} else {
 					jj = 0
 				}
 
-				vertexB := phys.GetPhysicsShapeVertex(body, jj)
+				vertexB := body.GetShapeVertex(jj)
 
 				rl.DrawLineV(
 					*(*rl.Vector2)(unsafe.Pointer(&vertexA)),
@@ -101,49 +97,36 @@ func loop(gs *GameState) {
 		}
 	}
 
-	rl.DrawText("Press 'R' to reset", 10, 10, 10, rl.White)
-	rl.DrawText("Press 'Esc' to quit", 10, 25, 10, rl.White)
+	rl.DrawText("Press 'Esc' to quit", 10, 10, 10, rl.White)
 
 	rl.EndDrawing()
 }
 
 type GameState struct {
-	floor  []*phys.PhysicsBodyData
-	player *phys.PhysicsBodyData
+	floor  []*phys.Body
+	player *phys.Body
 }
 
-func makePlayer() *phys.PhysicsBodyData {
-	player := phys.CreatePhysicsBodyRectangle(
-		phys.NewVector2(float32(screenWidth/2), float32(screenHeight/2)),
-		50,
-		50,
-		10,
-	)
-	player.FreezeOrient = true
-	player.Enabled = true
-	return player
-}
-
-func makeFloor() []*phys.PhysicsBodyData {
-	var flooring [3]*phys.PhysicsBodyData
-	floor := phys.CreatePhysicsBodyRectangle(
-		phys.NewVector2(float32(screenWidth/2), float32(screenHeight)),
+func makeFloor() []*phys.Body {
+	var flooring [3]*phys.Body
+	floor := phys.NewBodyRectangle(
+		rl.NewVector2(float32(screenWidth/2), float32(screenHeight)),
 		500,
 		100,
 		10,
 	)
 	floor.Enabled = false
 
-	platform1 := phys.CreatePhysicsBodyRectangle(
-		phys.NewVector2(400, 320),
+	platform1 := phys.NewBodyRectangle(
+		rl.NewVector2(400, 320),
 		float32(screenWidth/2),
 		30,
 		10,
 	)
 	platform1.Enabled = false
 
-	platform2 := phys.CreatePhysicsBodyRectangle(
-		phys.NewVector2(500, 220),
+	platform2 := phys.NewBodyRectangle(
+		rl.NewVector2(500, 220),
 		30,
 		150,
 		10,
@@ -157,25 +140,36 @@ func makeFloor() []*phys.PhysicsBodyData {
 	return flooring[:]
 }
 
+func MakePlayer() *phys.Body {
+	player := phys.NewBodyRectangle(
+		rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)),
+		50,
+		50,
+		10,
+	)
+	player.FreezeOrient = true
+	player.Enabled = true
+	return player
+}
+
 func main() {
 
 	runtime.LockOSThread()
-	rl.SetConfigFlags(uint32(rl.FLAG_MSAA_4X_HINT))
 
 	rl.InitWindow(screenWidth, screenHeight, "[there is no bug] - Simple Platform demo")
 	defer rl.CloseWindow()
 
-	phys.InitPhysics()
+	phys.Init()
 
 	rl.SetTargetFPS(60)
 	gameState := GameState{
 		floor:  makeFloor(),
-		player: makePlayer(),
+		player: MakePlayer(),
 	}
 
 	for !rl.WindowShouldClose() {
 		loop(&gameState)
 	}
 
-	phys.ClosePhysics()
+	phys.Close()
 }
