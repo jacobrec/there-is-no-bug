@@ -3,14 +3,11 @@ TARGET_EXEC ?= game
 BUILD_DIR ?= ./build
 SRC_DIRS ?= ./src
 
+CC := g++
+
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-DEPS := $(OBJS:.o=.d)
-
-INC_DIRS := $(shell find $(SRC_DIRS) -type d)
-INC_FLAGS := $(addprefix -I,$(INC_DIRS))
-LIBS := -lraylib
-
+LIBS := -L/usr/local/lib/ -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -DPLATFORM_DESKTOP
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
@@ -24,6 +21,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	$(MKDIR_P) $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
+
 run-linux: $(BUILD_DIR)/$(TARGET_EXEC)
 	./$(BUILD_DIR)/$(TARGET_EXEC)
 
@@ -32,7 +30,5 @@ run-linux: $(BUILD_DIR)/$(TARGET_EXEC)
 
 clean:
 	$(RM) -r $(BUILD_DIR)
-
--include $(DEPS)
 
 MKDIR_P ?= mkdir -p
