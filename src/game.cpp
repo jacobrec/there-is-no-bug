@@ -17,14 +17,18 @@ GameData InitGame(Map m) {
     gd.cam.rotation = 0;
     int tileCount = m.tileset.tiles.size();
     for (int i = 0; i < (int)m.tiledata.size(); i++) {
-        if (m.collisiondata[i] == COL_SOLID) {
-            PhysicsBody b = CreatePhysicsBodyRectangle(Vector2{(i % m.width) * UNIT, (i / m.width) * UNIT}, UNIT, UNIT, 1);
-            b->enabled = false;
-        }
         if (m.tiledata[i] == tileCount) { // special 1 is player
             gd.player = Player {};
-            gd.player.body = CreatePhysicsBodyRectangle(Vector2{(i % m.width) * UNIT, (i / m.width) * UNIT}, UNIT, UNIT, 1);
+            gd.player.body = CreatePhysicsBodyRectangle(Vector2{(i % m.width) * UNIT + UNIT/2, (i / m.width) * UNIT + UNIT/2}, UNIT, UNIT, 1);
             gd.player.body->freezeOrient = true;
+        }
+        if (m.collisiondata[i] == COL_SOLID) {
+            int x = (i % m.width);
+            int i2 = 0;
+            while (i2 + x < m.width && m.collisiondata[i + i2] == COL_SOLID) i2++;
+            PhysicsBody b = CreatePhysicsBodyRectangle(Vector2{x * UNIT + (UNIT*i2) / 2, (i / m.width) * UNIT + UNIT/2}, UNIT * i2, UNIT, 1);
+            b->enabled = false;
+            i += i2;
         }
     }
     return gd;
@@ -36,10 +40,10 @@ void input(GameData *d) {
     d->keys.down   = IsKeyDown(KEY_S) || IsKeyDown(KEY_J) || IsKeyDown(KEY_DOWN);
     d->keys.left   = IsKeyDown(KEY_A) || IsKeyDown(KEY_H) || IsKeyDown(KEY_LEFT);
     d->keys.right  = IsKeyDown(KEY_D) || IsKeyDown(KEY_L) || IsKeyDown(KEY_RIGHT);
-    d->keys.a      = IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-    d->keys.b      = IsKeyDown(KEY_LEFT_SHIFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-    d->keys.start  = IsKeyDown(KEY_ESCAPE) || IsKeyDown(KEY_Q);
-    d->keys.select = IsKeyDown(KEY_ENTER) || IsKeyDown(KEY_E);
+    d->keys.a      = IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    d->keys.b      = IsKeyPressed(KEY_LEFT_SHIFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+    d->keys.start  = IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_Q);
+    d->keys.select = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_E);
 
 }
 
@@ -107,7 +111,7 @@ void draw(GameData *d) {
     if (d->player.body->isGrounded) {
         c = YELLOW;
     }
-    DrawRectangle(d->player.body->position.x, d->player.body->position.y, UNIT, UNIT, c);
+    DrawRectangle(d->player.body->position.x - UNIT/2, d->player.body->position.y - UNIT/2, UNIT, UNIT, c);
      
 }
 
@@ -119,7 +123,7 @@ void RenderGame(GameData *d) {
     BeginDrawing();
     BeginMode2D(d->cam);
     draw(d);
-    // drawDebugPhysics();
+    drawDebugPhysics();
     EndMode2D();
     EndDrawing();
 
