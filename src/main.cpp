@@ -31,9 +31,12 @@ int main(void) {
 
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "there is no bug");
-    SetTargetFPS(60);
+    InitPhysics();
+    SetTargetFPS(30);
+    SetPhysicsTimeStep(1000.0 / 120.0); // 4 times per frame
 
     ed = InitEditor();
+
 
     while (!WindowShouldClose()) {
         switch (s) {
@@ -47,6 +50,9 @@ int main(void) {
             break;
         }
     }
+
+    ClosePhysics();
+    CloseWindow();
 
     return 0;
 }

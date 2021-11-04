@@ -1,7 +1,6 @@
 #include <raylib.h>
-#define PHYSAC_IMPLEMENTATION
-#include "extras/physac.h"
 
+#define PHYSAC_IMPLEMENTATION
 #include "game.h"
 #include "map.h"
 #include "util.h"
@@ -18,11 +17,14 @@ GameData InitGame(Map m) {
     gd.cam.rotation = 0;
     int tileCount = m.tileset.tiles.size();
     for (int i = 0; i < (int)m.tiledata.size(); i++) {
+        if (m.collisiondata[i] == COL_SOLID) {
+            PhysicsBody b = CreatePhysicsBodyRectangle(Vector2{(i % m.width) * UNIT, (i / m.width) * UNIT}, UNIT, UNIT, 1);
+            b->enabled = false;
+        }
         if (m.tiledata[i] == tileCount) { // special 1 is player
             gd.player = Player {};
-            gd.player.size = UNIT;
-            gd.player.pos.x = (i % m.width) * UNIT;
-            gd.player.pos.x = (i / m.width) * UNIT;
+            gd.player.body = CreatePhysicsBodyRectangle(Vector2{(i % m.width) * UNIT, (i / m.width) * UNIT}, UNIT, UNIT, 1);
+            gd.player.body->freezeOrient = true;
         }
     }
     return gd;
@@ -47,6 +49,39 @@ void update(GameData *d) {
     lastTime += delta;
 
     if (d->keys.start) {SetScreen(SCREEN_EDITOR);}
+
+    const float VELOCITY = 0.5f;
+    if (d->keys.left && !d->keys.right) {
+        d->player.body->velocity.x = -VELOCITY;
+    } else if (d->keys.right && !d->keys.left) {
+        d->player.body->velocity.x = VELOCITY;
+    }
+    if (d->keys.a) {
+        d->player.body->velocity.y = -VELOCITY * 3;
+    }
+
+
+    d->cam.target = d->player.body->position;
+
+    UpdatePhysicsStep();
+    UpdatePhysicsStep();
+}
+
+void drawDebugPhysics() {
+    int bodiesCount = GetPhysicsBodiesCount();
+    for (int i = 0; i < bodiesCount; i++) {
+        PhysicsBody body = GetPhysicsBody(i);
+
+        int vertexCount = GetPhysicsShapeVerticesCount(i);
+        for (int j = 0; j < vertexCount; j++) {
+            Vector2 vertexA = GetPhysicsShapeVertex(body, j);
+
+            int jj = (((j + 1) < vertexCount) ? (j + 1) : 0);
+            Vector2 vertexB = GetPhysicsShapeVertex(body, jj);
+
+            DrawLineV(vertexA, vertexB, GREEN);
+        }
+    }
 }
 
 void DrawTextureJ(Texture2D texture, float x, float y, float size) {
@@ -68,7 +103,11 @@ void draw(GameData *d) {
         }
     }
 
-    DrawRectangle(d->player.pos.x, d->player.pos.y, d->player.size, d->player.size, ORANGE);
+    Color c = ORANGE;
+    if (d->player.body->isGrounded) {
+        c = YELLOW;
+    }
+    DrawRectangle(d->player.body->position.x, d->player.body->position.y, UNIT, UNIT, c);
      
 }
 
@@ -80,6 +119,7 @@ void RenderGame(GameData *d) {
     BeginDrawing();
     BeginMode2D(d->cam);
     draw(d);
+    // drawDebugPhysics();
     EndMode2D();
     EndDrawing();
 

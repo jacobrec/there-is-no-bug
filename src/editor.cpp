@@ -12,22 +12,18 @@
 #include "util.h"
 
 void save(EditorData* d) {
+    SaveMap(&d->m);
 }
 void run() {
     SetScreen(SCREEN_GAME);
 }
 
 EditorData InitEditor() {
-    Tileset t = TilesetLoad("bonky_kong");
-    Map m = Map {
-        string("bonky_kong.map"), // path
-        vector<int>(100, 0), // tiledata
-        vector<int>(100, COL_NONE), // collisiondata
-        10, // width
-        10, // height
-        1, // specials
-        t, // tileset
-    };
+    if (ListDirectory("assets/maps/").size() == 0) {
+        printf("No maps found. Unable to load editor. Please create a map file: $ touch assets/maps/mapname.map");
+    }
+    
+    Map m = LoadMap(ListDirectory("assets/maps/")[0]);
     EditorData ed = EditorData {
         m, // Map m
         0, // int tilesetChoice

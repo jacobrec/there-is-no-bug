@@ -28,4 +28,8 @@ struct Map {
 };
 Tileset TilesetLoad(string path);
 vector<Texture2D> TilesetTextures(Tileset *t);
+
+void SaveMap(Map *m);
+Map LoadMap(string path);
+
 #endif
