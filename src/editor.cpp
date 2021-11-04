@@ -11,6 +11,12 @@
 #include "editor.h"
 #include "util.h"
 
+void save(EditorData* d) {
+}
+void run() {
+    SetScreen(SCREEN_GAME);
+}
+
 EditorData InitEditor() {
     Tileset t = TilesetLoad("bonky_kong");
     Map m = Map {
@@ -32,6 +38,7 @@ EditorData InitEditor() {
         true, // bool showGrid
         ListDirectory(string("assets/art/tilesets")), // vector<string> tilesetChoices;
         TilesetTextures(&m.tileset),
+        false, // bool shouldPlay
     };
     auto res = find(ed.tilesetChoices.begin(), ed.tilesetChoices.end(), m.tileset.root);
     ed.tilesetChoice = res ==  ed.tilesetChoices.end() ? 0 : res - ed.tilesetChoices.begin();
@@ -143,11 +150,11 @@ void RenderEditor(EditorData *d) {
     if (mouseWheel != 0) {zoomFn(pow(zoomInc, mouseWheel));}
 
     GuiLabel(Rectangle{465, 5, 50, 10}, "Run");
-    if (GuiButton(Rectangle{450, 20, 50, 25}, "#134#")) {}
+    if (GuiButton(Rectangle{450, 20, 50, 25}, "#134#")) {run();}
     GuiLabel(Rectangle{510, 5, 50, 10}, "Save/Run");
-    if (GuiButton(Rectangle{500, 20, 70, 25}, "#13#")) {}
+    if (IsKeyPressed(KEY_R)|| GuiButton(Rectangle{500, 20, 70, 25}, "#13#")) {save(d); run();}
     GuiLabel(Rectangle{580, 5, 50, 10}, "Save");
-    if (GuiButton(Rectangle{570, 20, 50, 25}, "#2#")) {}
+    if (GuiButton(Rectangle{570, 20, 50, 25}, "#2#")) {save(d);}
 
 
 

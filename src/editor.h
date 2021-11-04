@@ -20,6 +20,7 @@ struct EditorData {
     bool showGrid;
     vector<string> tilesetChoices;
     vector<Texture2D> images;
+    bool shouldPlay;
 };
 
 EditorData InitEditor();
