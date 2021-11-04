@@ -26,7 +26,7 @@ GameData InitGame(Map m) {
             int x = (i % m.width);
             int i2 = 0;
             while (i2 + x < m.width && m.collisiondata[i + i2] == COL_SOLID) i2++;
-            PhysicsBody b = CreatePhysicsBodyRectangle(Vector2{x * UNIT + (UNIT*i2) / 2, (i / m.width) * UNIT + UNIT/2}, UNIT * i2, UNIT, 1);
+            PhysicsBody b = CreatePhysicsBodyRectangle(Vector2{x * UNIT + (UNIT*i2) / 2, (i / m.width) * UNIT + UNIT/2}, UNIT * i2, UNIT, i2*10);
             b->enabled = false;
             i += i2;
         }
