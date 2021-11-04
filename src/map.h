@@ -6,6 +6,13 @@
 #include <raylib.h>
 using namespace std;
 
+enum CollisionType {
+    COL_NONE,
+    COL_SOLID,
+    COL_CLIMB,
+    COLLISION_TYPE_COUNT
+};
+
 struct Tileset {
     string root;
     vector<string> tiles;
@@ -13,6 +20,7 @@ struct Tileset {
 struct Map {
     string path;
     vector<int> tiledata;
+    vector<int> collisiondata;
     int width;
     int height;
     int specials;

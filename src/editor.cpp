@@ -22,6 +22,7 @@ EditorData InitEditor() {
     Map m = Map {
         string("bonky_kong.map"), // path
         vector<int>(100, 0), // tiledata
+        vector<int>(100, COL_NONE), // collisiondata
         10, // width
         10, // height
         1, // specials
@@ -35,7 +36,9 @@ EditorData InitEditor() {
         0.0, // Pan offset X
         0.0, // Pan offset y
         0, // int selectedTile
+        0, // int selectedCollision
         true, // bool showGrid
+        false, // bool collisionMode
         ListDirectory(string("assets/art/tilesets")), // vector<string> tilesetChoices;
         TilesetTextures(&m.tileset),
         false, // bool shouldPlay
@@ -56,13 +59,21 @@ void RenderEditor(EditorData *d) {
     float tilescale = d->images[0].width * 5 / 8;
     float tilesize = d->images[0].width * tilescale;
 
-    auto drawTile = [&tilescale, &d, &tilesize](float x, float y, int i, float zoom) {
+    auto drawCollisionTile = [&tilesize](float x, float y, int i, float zoom) {
+        Color c[10] = {WHITE, DARKBLUE, GRAY, ORANGE, BLUE, GREEN, YELLOW, PINK, PURPLE, BEIGE};
+        DrawRectangle(x, y, tilesize*zoom, tilesize*zoom, c[i]);
+    };
+    auto drawTile = [&tilescale, &d, &tilesize](float x, float y, int i, float zoom, int alpha) {
+        Color c;
         if (i < (int)d->images.size()) {
-            DrawTextureEx(d->images[i], Vector2{x, y}, 0, tilescale * zoom, WHITE);
+            c = WHITE; c.a = alpha;
+            DrawTextureEx(d->images[i], Vector2{x, y}, 0, tilescale * zoom, c);
         } else {
-            DrawEllipse(x+tilesize/2*zoom, y+tilesize/2*zoom, tilesize/3*zoom, tilesize/3*zoom, ORANGE);
+            c = ORANGE; c.a = alpha;
+            DrawEllipse(x+tilesize/2*zoom, y+tilesize/2*zoom, tilesize/3*zoom, tilesize/3*zoom, c);
             char text[2] = {(char)(48 + i - (int)d->images.size()), 0};
-            DrawText(text, x+tilesize/2*zoom, y+tilesize/3*zoom, tilesize / 3*zoom, GRAY);
+            c = GRAY; c.a = alpha;
+            DrawText(text, x+tilesize/2*zoom, y+tilesize/3*zoom, tilesize / 3*zoom, c);
         }
     };
 
@@ -72,15 +83,28 @@ void RenderEditor(EditorData *d) {
     for (int i = 0; i < (int)d->m.tiledata.size(); i++) {
         float x = d->panOffsetX + (i % d->m.width) * (tilesize * d->zoom);
         float y = d->panOffsetY + (i / d->m.width) * (tilesize * d->zoom) + 50;
-        drawTile(x, y, d->m.tiledata[i], d->zoom);
+        if (d->collisionMode) {
+            drawCollisionTile(x, y, d->m.collisiondata[i], d->zoom);
+            drawTile(x, y, d->m.tiledata[i], d->zoom, 100);
+        } else {
+            drawTile(x, y, d->m.tiledata[i], d->zoom, 255);
+        }
         auto selectangle = Rectangle{x, y, tilesize*d->zoom+1, tilesize*d->zoom+1};
         if (d->showGrid) {
             DrawRectangleLinesEx(selectangle, 1, GRAY);
         }
         if (CheckCollisionPointRec(GetMousePosition(), selectangle)) {
-            drawTile(x, y, d->selectedTile, d->zoom);
+            if (d->collisionMode) {
+                drawCollisionTile(x, y, d->selectedCollision, d->zoom);
+            } else {
+                drawTile(x, y, d->selectedTile, d->zoom, 125);
+            }
             if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                d->m.tiledata[i] = d->selectedTile;
+                if (d->collisionMode) {
+                    d->m.collisiondata[i] = d->selectedCollision;
+                } else {
+                    d->m.tiledata[i] = d->selectedTile;
+                }
             }
         }
     }
@@ -112,16 +136,25 @@ void RenderEditor(EditorData *d) {
     //////////////////
     int tilesPerLine = 3;
     float tilePadding = 5;
-    for (int i = 0; i < (int)d->images.size()+d->m.specials; i++) {
+    int len = d->collisionMode ? COLLISION_TYPE_COUNT : (int)d->images.size()+d->m.specials;
+    for (int i = 0; i < len; i++) {
         float x = (i % tilesPerLine) * (tilePadding + tilesize) + 660;
         float y = (i / tilesPerLine) * (tilePadding + tilesize) + 100;
-        drawTile(x, y, i, 1.0);
+        if (d->collisionMode) {
+            drawCollisionTile(x, y, i, 1.0);
+        } else {
+            drawTile(x, y, i, 1.0, 255);
+        }
         auto selectangle = Rectangle{x - tilePadding/2, y - tilePadding/2, tilesize + tilePadding, tilesize + tilePadding};
-        if (i == d->selectedTile) {
+        if ((i == d->selectedTile && !d->collisionMode) || (d->collisionMode && i == d->selectedCollision)) {
             DrawRectangleLinesEx(selectangle, 3, GRAY);
         }
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), selectangle)) {
-            d->selectedTile = i;
+            if(d->collisionMode) {
+                d->selectedCollision = i;
+            } else {
+                d->selectedTile = i;
+            }
         }
     }
 
@@ -129,7 +162,6 @@ void RenderEditor(EditorData *d) {
     if (GuiButton(Rectangle{170, 10, 80, 30}, "Switch Map")) {
     }
 
-    d->showGrid = GuiCheckBox(Rectangle{320, 20, 10, 10}, "Grid", d->showGrid);
 
 
     //////////////////
@@ -157,6 +189,11 @@ void RenderEditor(EditorData *d) {
     if (GuiButton(Rectangle{570, 20, 50, 25}, "#2#")) {save(d);}
 
 
+    d->showGrid = GuiCheckBox(Rectangle{320, 10, 10, 10}, "Grid", d->showGrid);
+    d->collisionMode = GuiCheckBox(Rectangle{320, 30, 10, 10}, "Collisions", d->collisionMode);
+    if (IsKeyPressed(KEY_SPACE)) {
+        d->collisionMode = !d->collisionMode;
+    }
 
 
 

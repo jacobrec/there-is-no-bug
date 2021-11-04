@@ -17,7 +17,9 @@ struct EditorData {
     float panOffsetX;
     float panOffsetY;
     int selectedTile;
+    int selectedCollision;
     bool showGrid;
+    bool collisionMode;
     vector<string> tilesetChoices;
     vector<Texture2D> images;
     bool shouldPlay;
