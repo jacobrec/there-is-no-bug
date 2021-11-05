@@ -202,14 +202,18 @@ void RenderEditor(EditorData *d) {
     GuiSpinner(Rectangle{700, 395, 80, 20}, "Width", &d->m.width, 0, 100, false);
     GuiSpinner(Rectangle{700, 420, 80, 20}, "Height", &d->m.height, 0, 100, false);
     if (ow != d->m.width || oh != d->m.height) {
-        vector<int> olddata = d->m.tiledata;
-        vector<int> newdata = vector<int>(d->m.width * d->m.height, 0);
+        vector<int> oldtiledata = d->m.tiledata;
+        vector<int> newtiledata = vector<int>(d->m.width * d->m.height, 0);
+        vector<int> oldcoldata = d->m.tiledata;
+        vector<int> newcoldata = vector<int>(d->m.width * d->m.height, 0);
         for (int y = 0; y < d->m.height && y < oh; y++) {
             for (int x = 0; x < d->m.width && x < ow; x++) {
-                newdata[x + y * d->m.width] = olddata[x + y * ow];
+                newtiledata[x + y * d->m.width] = oldtiledata[x + y * ow];
+                newcoldata[x + y * d->m.width] = oldcoldata[x + y * ow];
             }
         }
-        d->m.tiledata = newdata;
+        d->m.tiledata = newtiledata;
+        d->m.collisiondata = newcoldata;
     }
 
 

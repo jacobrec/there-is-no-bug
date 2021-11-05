@@ -4,6 +4,7 @@
 *
 *   MODIFED BY JACOB:
 *   - Added isWallSliding property
+*   - Added for big performance boost on overlapping tiles. if ((!bodyA->enabled) && (!bodyB->enabled)) continue;
 *
 *
 *   DESCRIPTION:
@@ -100,7 +101,7 @@
 #define PHYSAC_DEFAULT_CIRCLE_VERTICES  24          // Default number of vertices for circle shapes
 
 #define PHYSAC_COLLISION_ITERATIONS     100
-#define PHYSAC_PENETRATION_ALLOWANCE    0.05f
+#define PHYSAC_PENETRATION_ALLOWANCE    0.01f
 #define PHYSAC_PENETRATION_CORRECTION   0.4f
 
 #define PHYSAC_PI                       3.14159265358979323846f
@@ -1033,6 +1034,7 @@ static void UpdatePhysicsStep(void)
                 if (bodyB != NULL)
                 {
                     if ((bodyA->inverseMass == 0) && (bodyB->inverseMass == 0)) continue;
+                    if ((!bodyA->enabled) && (!bodyB->enabled)) continue;
 
                     PhysicsManifold manifold = CreatePhysicsManifold(bodyA, bodyB);
                     SolvePhysicsManifold(manifold);

@@ -83,6 +83,8 @@ Map LoadMap(string path) {
     for (int i = 0; i < tilesetNameSize; i++) {
         tilesetname.push_back(data[byteIdx++]);
     }
+    m.tiledata = vector<int>(m.width * m.height, 0);
+    m.collisiondata = vector<int>(m.width * m.height, 0);
     for (int i = 0; i < m.width * m.height; i++) {
         m.tiledata[i] = data[byteIdx++];
         m.collisiondata[i] = data[byteIdx++];
