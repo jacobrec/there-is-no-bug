@@ -7,6 +7,14 @@
 
 const float UNIT = 50;
 
+PhysicsBody JCreatePhysicsBody(float x, float y, float w, float h, bool moving) {
+    auto p = CreatePhysicsBodyRectangle(Vector2 {x, y}, w, h, w * h * (moving ? 1 : 10) / UNIT);
+    p->enabled = moving;
+    p->freezeOrient = moving;
+    printf("Made Physics Body [%f, %f, %f, %f] %s\n", x, y, w, h, moving ? "player" : "wall");
+    return p;
+}
+
 GameData InitGame(Map m) {
     GameData gd;
     gd.map = m;
@@ -17,20 +25,24 @@ GameData InitGame(Map m) {
     gd.cam.rotation = 0;
     int tileCount = m.tileset.tiles.size();
     for (int i = 0; i < (int)m.tiledata.size(); i++) {
-        if (m.tiledata[i] == tileCount) { // special 1 is player
-            gd.player = Player {};
-            gd.player.body = CreatePhysicsBodyRectangle(Vector2{(i % m.width) * UNIT + UNIT/2, (i / m.width) * UNIT + UNIT/2}, UNIT, UNIT, 1);
-            gd.player.body->freezeOrient = true;
-        }
         if (m.collisiondata[i] == COL_SOLID) {
+            // TODO: Better walls make each block one polygon
             int x = (i % m.width);
             int i2 = 0;
             while (i2 + x < m.width && m.collisiondata[i + i2] == COL_SOLID) i2++;
-            PhysicsBody b = CreatePhysicsBodyRectangle(Vector2{x * UNIT + (UNIT*i2) / 2, (i / m.width) * UNIT + UNIT/2}, UNIT * i2, UNIT, i2*10);
-            b->enabled = false;
+            PhysicsBody b = JCreatePhysicsBody(x * UNIT + (UNIT*i2) / 2, (i / m.width) * UNIT + UNIT/2, UNIT * i2, UNIT, false);
+            gd.bodies.push_back(b);
             i += i2;
         }
     }
+    for (int i = 0; i < (int)m.tiledata.size(); i++) {
+        if (m.tiledata[i] == tileCount) { // special 1 is player
+            PhysicsBody body = JCreatePhysicsBody((i % m.width) * UNIT + UNIT/2, (i / m.width) * UNIT + UNIT/2, UNIT, UNIT, true);
+            gd.player = Player { body };
+        }
+    }
+
+
     return gd;
 }
 
@@ -52,23 +64,30 @@ void update(GameData *d) {
     float delta = GetTime() - lastTime;
     lastTime += delta;
 
+    UpdatePhysics();
     if (d->keys.start) {SetScreen(SCREEN_EDITOR);}
 
-    const float VELOCITY = 0.5f;
+    const float VELOCITY = 1.0f;
+    const float JUMP_VELOCITY = -1.5f;
+    const float FORCE = 6000;
+    float f = FORCE * (1 - abs((d->player.body->velocity.x / VELOCITY)));
     if (d->keys.left && !d->keys.right) {
-        d->player.body->velocity.x = -VELOCITY;
+        PhysicsAddForce(d->player.body, Vector2{-f, 0});
     } else if (d->keys.right && !d->keys.left) {
-        d->player.body->velocity.x = VELOCITY;
+        PhysicsAddForce(d->player.body, Vector2{f, 0});
     }
     if (d->keys.a) {
-        d->player.body->velocity.y = -VELOCITY * 3;
+        if (d->player.body->isGrounded) {
+            d->player.body->velocity.y = JUMP_VELOCITY;
+        } else if (d->player.body->isWallSliding) {
+            d->player.body->velocity.y = JUMP_VELOCITY;
+            d->player.body->velocity.x = - d->player.body->isWallSliding * VELOCITY / 2;
+        }
     }
 
 
     d->cam.target = d->player.body->position;
 
-    UpdatePhysicsStep();
-    UpdatePhysicsStep();
 }
 
 void drawDebugPhysics() {
@@ -108,6 +127,16 @@ void draw(GameData *d) {
     }
 
     Color c = ORANGE;
+    // printf("draw Player pos(%f, %f). Vel: (%f, %f). Grounded: %s\n",
+    //        d->player.body->position.x,
+    //        d->player.body->position.y,
+    //        d->player.body->velocity.x,
+    //        d->player.body->velocity.y,
+    //        d->player.body->isGrounded ? "true" : "false"
+    //     );
+    if (d->player.body->isWallSliding) {
+        c = RED;
+    }
     if (d->player.body->isGrounded) {
         c = YELLOW;
     }

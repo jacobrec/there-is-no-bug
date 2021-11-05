@@ -2,6 +2,10 @@
 *
 *   Physac v1.1 - 2D Physics library for videogames
 *
+*   MODIFED BY JACOB:
+*   - Added isWallSliding property
+*
+*
 *   DESCRIPTION:
 *
 *   Physac is a small 2D physics engine written in pure C. The engine uses a fixed time-step thread loop
@@ -162,6 +166,7 @@ typedef struct PhysicsBodyData {
     float restitution;                          // Restitution coefficient of the body (0 to 1)
     bool useGravity;                            // Apply gravity force to dynamics
     bool isGrounded;                            // Physics grounded on other body state
+    int isWallSliding;                          // Physics pressed on side, -1 is left, 1 is right
     bool freezeOrient;                          // Physics rotation constraint
     PhysicsShape shape;                         // Physics body shape information (type, radius, vertices, transform)
 } PhysicsBodyData;
@@ -447,6 +452,7 @@ PhysicsBody CreatePhysicsBodyRectangle(Vector2 pos, float width, float height, f
         body->restitution = 0.0f;
         body->useGravity = true;
         body->isGrounded = false;
+        body->isWallSliding = false;
         body->freezeOrient = false;
 
         // Add new body to bodies pointers array and update bodies count
@@ -529,6 +535,7 @@ PhysicsBody CreatePhysicsBodyPolygon(Vector2 pos, float radius, int sides, float
         body->restitution = 0.0f;
         body->useGravity = true;
         body->isGrounded = false;
+        body->isWallSliding = false;
         body->freezeOrient = false;
 
         // Add new body to bodies pointers array and update bodies count
@@ -1009,6 +1016,7 @@ static void UpdatePhysicsStep(void)
     {
         PhysicsBody body = bodies[i];
         body->isGrounded = false;
+        body->isWallSliding = false;
     }
  
     // Generate new collision information
@@ -1301,6 +1309,13 @@ static void SolvePhysicsManifold(PhysicsManifold manifold)
 
     // Update physics body grounded state if normal direction is down and grounded state is not set yet in previous manifolds
     if (!manifold->bodyB->isGrounded) manifold->bodyB->isGrounded = (manifold->normal.y < 0);
+    if (!manifold->bodyB->isWallSliding) {
+        if (manifold->normal.x > 0) {
+            manifold->bodyB->isWallSliding = -1;
+        } else if (manifold->normal.x < 0) {
+            manifold->bodyB->isWallSliding = 1;
+        }
+    }
 }
 
 // Solves collision between two circle shape physics bodies
@@ -1342,6 +1357,13 @@ static void SolveCircleToCircle(PhysicsManifold manifold)
 
     // Update physics body grounded state if normal direction is down
     if (!bodyA->isGrounded) bodyA->isGrounded = (manifold->normal.y < 0);
+    if (!bodyA->isWallSliding) {
+        if (manifold->normal.x > 0) {
+            bodyA->isWallSliding = -1;
+        } else if (manifold->normal.x < 0) {
+            bodyA->isWallSliding = 1;
+        }
+    }
 }
 
 // Solves collision between a circle to a polygon shape physics bodies
