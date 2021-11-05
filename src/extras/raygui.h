@@ -1298,6 +1298,145 @@ void GuiSetFont(Font font)
     }
 }
 
+const char *CodepointToUTF8(int codepoint, int *byteSize)
+{
+    static char utf8[6] = { 0 };
+    int size = 0;   // Byte size of codepoint
+
+    if (codepoint <= 0x7f)
+    {
+        utf8[0] = (char)codepoint;
+        size = 1;
+    }
+    else if (codepoint <= 0x7ff)
+    {
+        utf8[0] = (char)(((codepoint >> 6) & 0x1f) | 0xc0);
+        utf8[1] = (char)((codepoint & 0x3f) | 0x80);
+        size = 2;
+    }
+    else if (codepoint <= 0xffff)
+    {
+        utf8[0] = (char)(((codepoint >> 12) & 0x0f) | 0xe0);
+        utf8[1] = (char)(((codepoint >>  6) & 0x3f) | 0x80);
+        utf8[2] = (char)((codepoint & 0x3f) | 0x80);
+        size = 3;
+    }
+    else if (codepoint <= 0x10ffff)
+    {
+        utf8[0] = (char)(((codepoint >> 18) & 0x07) | 0xf0);
+        utf8[1] = (char)(((codepoint >> 12) & 0x3f) | 0x80);
+        utf8[2] = (char)(((codepoint >>  6) & 0x3f) | 0x80);
+        utf8[3] = (char)((codepoint & 0x3f) | 0x80);
+        size = 4;
+    }
+
+    *byteSize = size;
+
+    return utf8;
+}
+
+int GetCodepoint(const char *text, int *bytesProcessed)
+{
+/*
+    UTF-8 specs from https://www.ietf.org/rfc/rfc3629.txt
+    Char. number range  |        UTF-8 octet sequence
+      (hexadecimal)    |              (binary)
+    --------------------+---------------------------------------------
+    0000 0000-0000 007F | 0xxxxxxx
+    0000 0080-0000 07FF | 110xxxxx 10xxxxxx
+    0000 0800-0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
+    0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+*/
+    // NOTE: on decode errors we return as soon as possible
+
+    int code = 0x3f;   // Codepoint (defaults to '?')
+    int octet = (unsigned char)(text[0]); // The first UTF8 octet
+    *bytesProcessed = 1;
+
+    if (octet <= 0x7f)
+    {
+        // Only one octet (ASCII range x00-7F)
+        code = text[0];
+    }
+    else if ((octet & 0xe0) == 0xc0)
+    {
+        // Two octets
+
+        // [0]xC2-DF    [1]UTF8-tail(x80-BF)
+        unsigned char octet1 = text[1];
+
+        if ((octet1 == '\0') || ((octet1 >> 6) != 2)) { *bytesProcessed = 2; return code; } // Unexpected sequence
+
+        if ((octet >= 0xc2) && (octet <= 0xdf))
+        {
+            code = ((octet & 0x1f) << 6) | (octet1 & 0x3f);
+            *bytesProcessed = 2;
+        }
+    }
+    else if ((octet & 0xf0) == 0xe0)
+    {
+        // Three octets
+        unsigned char octet1 = text[1];
+        unsigned char octet2 = '\0';
+
+        if ((octet1 == '\0') || ((octet1 >> 6) != 2)) { *bytesProcessed = 2; return code; } // Unexpected sequence
+
+        octet2 = text[2];
+
+        if ((octet2 == '\0') || ((octet2 >> 6) != 2)) { *bytesProcessed = 3; return code; } // Unexpected sequence
+
+        // [0]xE0    [1]xA0-BF       [2]UTF8-tail(x80-BF)
+        // [0]xE1-EC [1]UTF8-tail    [2]UTF8-tail(x80-BF)
+        // [0]xED    [1]x80-9F       [2]UTF8-tail(x80-BF)
+        // [0]xEE-EF [1]UTF8-tail    [2]UTF8-tail(x80-BF)
+
+        if (((octet == 0xe0) && !((octet1 >= 0xa0) && (octet1 <= 0xbf))) ||
+            ((octet == 0xed) && !((octet1 >= 0x80) && (octet1 <= 0x9f)))) { *bytesProcessed = 2; return code; }
+
+        if ((octet >= 0xe0) && (0 <= 0xef))
+        {
+            code = ((octet & 0xf) << 12) | ((octet1 & 0x3f) << 6) | (octet2 & 0x3f);
+            *bytesProcessed = 3;
+        }
+    }
+    else if ((octet & 0xf8) == 0xf0)
+    {
+        // Four octets
+        if (octet > 0xf4) return code;
+
+        unsigned char octet1 = text[1];
+        unsigned char octet2 = '\0';
+        unsigned char octet3 = '\0';
+
+        if ((octet1 == '\0') || ((octet1 >> 6) != 2)) { *bytesProcessed = 2; return code; }  // Unexpected sequence
+
+        octet2 = text[2];
+
+        if ((octet2 == '\0') || ((octet2 >> 6) != 2)) { *bytesProcessed = 3; return code; }  // Unexpected sequence
+
+        octet3 = text[3];
+
+        if ((octet3 == '\0') || ((octet3 >> 6) != 2)) { *bytesProcessed = 4; return code; }  // Unexpected sequence
+
+        // [0]xF0       [1]x90-BF       [2]UTF8-tail  [3]UTF8-tail
+        // [0]xF1-F3    [1]UTF8-tail    [2]UTF8-tail  [3]UTF8-tail
+        // [0]xF4       [1]x80-8F       [2]UTF8-tail  [3]UTF8-tail
+
+        if (((octet == 0xf0) && !((octet1 >= 0x90) && (octet1 <= 0xbf))) ||
+            ((octet == 0xf4) && !((octet1 >= 0x80) && (octet1 <= 0x8f)))) { *bytesProcessed = 2; return code; } // Unexpected sequence
+
+        if (octet >= 0xf0)
+        {
+            code = ((octet & 0x7) << 18) | ((octet1 & 0x3f) << 12) | ((octet2 & 0x3f) << 6) | (octet3 & 0x3f);
+            *bytesProcessed = 4;
+        }
+    }
+
+    if (code > 0x10ffff) code = 0x3f;     // Codepoints after U+10ffff are invalid
+
+    return code;
+}
+
 // Get custom gui font
 Font GuiGetFont(void)
 {
@@ -4337,6 +4476,7 @@ static int GetCodepoint(const char *text, int *bytesProcessed)
 
     return code;
 }
+
 #endif      // RAYGUI_STANDALONE
 
 #endif      // RAYGUI_IMPLEMENTATION

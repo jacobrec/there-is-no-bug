@@ -2,14 +2,11 @@
 #include <vector>
 #include <raylib.h>
 
-#include "extras/physac.h"
-
 #include "map.h"
 
 using namespace std;
 
 struct Player {
-    PhysicsBody body;
 };
 
 struct Keymap {
@@ -29,7 +26,6 @@ struct GameData {
     Player player;
     vector<Texture2D> images;
     Keymap keys;
-    vector<PhysicsBody> bodies;
 };
 
 GameData InitGame(Map m);
