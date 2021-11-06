@@ -164,7 +164,7 @@ void RenderEditor(EditorData *d) {
     // Topbar Buttons
     //////////////////
     const float zoomInc = 1.2;
-    const float lowerZoom = 0.5;
+    const float lowerZoom = 0.3;
     auto zoomFn = [&d, &lowerZoom] (float amount) {
         d->zoom *= amount;
         if (d->zoom < lowerZoom) {

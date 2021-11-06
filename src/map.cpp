@@ -30,13 +30,13 @@ void printMap(Map *m) {
 }
 
 void SaveMap(Map *m) {
-    unsigned char* bytes = (unsigned char*)malloc(5 + 2 * m->width * m->height);
-    bytes[0] = m->width;
-    bytes[1] = m->height;
-    bytes[2] = m->specials;
-    bytes[3] = m->path.size();
-    bytes[4] = m->tileset.root.size();
-    int byteIdx = 5;
+    unsigned char* bytes = (unsigned char*)malloc(5 + 2 * m->width * m->height + m->path.size() + m->tileset.root.size());
+    int byteIdx = 0;
+    bytes[byteIdx++] = m->width;
+    bytes[byteIdx++] = m->height;
+    bytes[byteIdx++] = m->specials;
+    bytes[byteIdx++] = m->path.size();
+    bytes[byteIdx++] = m->tileset.root.size();
     for (int i = 0; i < bytes[3]; i++) {
         bytes[byteIdx++] = m->path[i];
     }
