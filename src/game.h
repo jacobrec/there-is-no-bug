@@ -6,7 +6,15 @@
 
 using namespace std;
 
+enum class PlayerState {
+    Air, Sliding, Running, Standing
+};
 struct Player {
+    Vector2 pos;
+    Vector2 vel;
+    float size;
+    PlayerState state;
+    float lastJumped;
 };
 
 struct Keymap {

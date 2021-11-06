@@ -31,7 +31,7 @@ int main(void) {
 
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(screenWidth, screenHeight, "there is no bug");
-    SetTargetFPS(60);
+    SetTargetFPS(40);
 
     ed = InitEditor();
 
