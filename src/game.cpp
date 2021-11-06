@@ -201,7 +201,6 @@ void RenderGame(GameData *d) {
     BeginDrawing();
     BeginMode2D(d->cam);
     draw(d);
-    // drawDebugPhysics();
     EndMode2D();
     EndDrawing();
 
