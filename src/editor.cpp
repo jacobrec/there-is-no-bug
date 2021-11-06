@@ -87,7 +87,7 @@ void RenderEditor(EditorData *d) {
         }
         auto selectangle = Rectangle{x, y, tilesize*d->zoom+1, tilesize*d->zoom+1};
         if (d->showGrid) {
-            DrawRectangleLinesEx(selectangle, 1, GRAY);
+            DrawRectangleLines(selectangle.x, selectangle.y, selectangle.width, selectangle.height, GRAY);
         }
         if (CheckCollisionPointRec(GetMousePosition(), selectangle)) {
             if (d->collisionMode) {
@@ -143,7 +143,7 @@ void RenderEditor(EditorData *d) {
         }
         auto selectangle = Rectangle{x - tilePadding/2, y - tilePadding/2, tilesize + tilePadding, tilesize + tilePadding};
         if ((i == d->selectedTile && !d->collisionMode) || (d->collisionMode && i == d->selectedCollision)) {
-            DrawRectangleLinesEx(selectangle, 3, GRAY);
+            DrawRectangleLines(selectangle.x, selectangle.y, selectangle.width, selectangle.height, GRAY);
         }
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), selectangle)) {
             if(d->collisionMode) {
