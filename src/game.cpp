@@ -83,6 +83,7 @@ void updatePlayer(GameData *d, float delta) {
     float ps = d->player.size;
     float inset = UNIT / 5;
     float colmask = UNIT / 5;
+    float tiny_colmask = 1;
     bool grounded = false;
     bool climbing = false;
     int walled = 0;
@@ -100,6 +101,14 @@ void updatePlayer(GameData *d, float delta) {
                             if (d->keys.up || d->keys.down)
                             climbing = true;
                         }
+                    }
+                } else if (d->map.collisiondata[idx] == COL_ONE_WAY) {
+                    auto pb = Rectangle{px+inset/2, py + ps - tiny_colmask, ps-inset, tiny_colmask};
+                    auto onewaytile = Rectangle{xt*UNIT, yt*UNIT, UNIT/5, UNIT};
+                    if (d->player.vel.y > 0 && CheckCollisionRecs(pb, onewaytile)) { // Collision Bottom
+                        d->player.pos.y = yt * UNIT - ps + 1;
+                        d->player.vel.y = 0;
+                        grounded = true;
                     }
                 } else if (d->map.collisiondata[idx] == COL_SOLID) {
                     auto pb = Rectangle{px+inset/2, py + ps - colmask, ps-inset, colmask};
@@ -139,7 +148,7 @@ void updatePlayer(GameData *d, float delta) {
     if (climbing) {
         d->player.state = PlayerState::Climbing;
     }
-    if ((!climbing && d->player.state == PlayerState::Climbing) || d->keys.b) {
+    if (d->player.state == PlayerState::Climbing && (!climbing || d->keys.b)) {
         d->player.state = PlayerState::Air;
     }
 

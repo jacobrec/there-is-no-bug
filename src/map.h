@@ -10,6 +10,7 @@ enum CollisionType {
     COL_NONE,
     COL_SOLID,
     COL_CLIMB,
+    COL_ONE_WAY,
     COLLISION_TYPE_COUNT
 };
 
