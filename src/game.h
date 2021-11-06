@@ -7,7 +7,7 @@
 using namespace std;
 
 enum class PlayerState {
-    Air, Sliding, Running, Standing
+    Air, Sliding, Running, Standing, Climbing
 };
 struct Player {
     Vector2 pos;

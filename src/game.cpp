@@ -51,28 +51,29 @@ void input(GameData *d) {
 
 const float ACCEL = 10*UNIT;
 const float MAX_VELOCITY = 5*UNIT;
-const float JUMP_VELOCITY = -400.0f;
+const float JUMP_VELOCITY = -8*UNIT;
 const float FRICTION_FACTOR = 0.9f;
 const float AIR_FRICTION_FACTOR = 0.99f;
 const float GRAVITY = 35*UNIT;
 const float SPRINT_SPEED_MODIFIER = 2.5f;
 const float JUMP_COOLDOWN = 0.4f;
 const float JUMP_EXTENSION_TIME = 0.2f;
+const float CLIMB_SPEED = 5*UNIT;
 
-void update(GameData *d, float delta) {
-
-    if (d->keys.start) {SetScreen(SCREEN_EDITOR);}
-
+void updatePlayer(GameData *d, float delta) {
     auto effective_max_velocity = d->keys.b ? SPRINT_SPEED_MODIFIER * MAX_VELOCITY : MAX_VELOCITY;
-    d->player.state = PlayerState::Standing;
-    if (d->keys.left && !d->keys.right) {
-        d->player.vel.x -= ACCEL * delta;
-        d->player.vel.x = max(d->player.vel.x, -effective_max_velocity);
-        d->player.state = PlayerState::Running;
-    } else if (d->keys.right && !d->keys.left) {
-        d->player.vel.x += ACCEL * delta;
-        d->player.vel.x = min(d->player.vel.x, effective_max_velocity);
-        d->player.state = PlayerState::Running;
+    if (d->player.state == PlayerState::Climbing) {
+    } else {
+        d->player.state = PlayerState::Standing;
+        if (d->keys.left && !d->keys.right) {
+            d->player.vel.x -= ACCEL * delta;
+            d->player.vel.x = max(d->player.vel.x, -effective_max_velocity);
+            d->player.state = PlayerState::Running;
+        } else if (d->keys.right && !d->keys.left) {
+            d->player.vel.x += ACCEL * delta;
+            d->player.vel.x = min(d->player.vel.x, effective_max_velocity);
+            d->player.state = PlayerState::Running;
+        }
     }
 
     d->player.vel.y += GRAVITY * delta;
@@ -83,47 +84,73 @@ void update(GameData *d, float delta) {
     float inset = UNIT / 5;
     float colmask = UNIT / 5;
     bool grounded = false;
+    bool climbing = false;
     int walled = 0;
     for (int yt = (int) (py/UNIT) - 1; yt <= (int) (py/UNIT) + 1; yt++) {
         for (int xt = (int) (px/UNIT) - 1; xt <= (int) (px/UNIT) + 1; xt++) {
             int idx = xt + yt * d->map.width;
-            if (yt < d->map.height && yt >=0 && xt < d->map.width && xt >= 0 && d->map.collisiondata[idx] == COL_SOLID) {
-                auto pb = Rectangle{px+inset/2, py + ps - colmask, ps-inset, colmask};
-                auto pt = Rectangle{px+inset/2, py, ps-inset, colmask};
-                auto pl = Rectangle{px, py+inset/2, colmask, ps-inset};
-                auto pr = Rectangle{px+ps-colmask, py+inset/2, colmask, ps-inset};
+            if (yt < d->map.height && yt >=0 && xt < d->map.width && xt >= 0) {
                 auto tile = Rectangle{xt*UNIT, yt*UNIT, UNIT, UNIT};
-                if (CheckCollisionRecs(pb, tile)) { // Collision Bottom
-                    d->player.pos.y = yt * UNIT - ps + 1;
-                    d->player.vel.y = 0;
-                    grounded = true;
-                } else if (CheckCollisionRecs(pt, tile)) { // Collision Top
-                    d->player.pos.y = yt * UNIT + UNIT;
-                    d->player.vel.y = 0;
-                } else if (CheckCollisionRecs(pl, tile)) { // Collision Left
-                    d->player.pos.x = xt * UNIT + UNIT - 1;
-                    d->player.vel.x = max(0.0f, d->player.vel.x);
-                    walled = -1;
-                } else if (CheckCollisionRecs(pr, tile)) { // Collision Right
-                    d->player.pos.x = xt * UNIT - ps + 1;
-                    d->player.vel.x = min(0.0f, d->player.vel.x);
-                    walled = 1;
-                }
+                if (d->map.collisiondata[idx] == COL_CLIMB) {
+                    auto p = Rectangle{px, py, ps, ps};
+                    if (d->player.state == PlayerState::Climbing) {
+                        climbing = CheckCollisionRecs(p, tile);
+                    } else {
+                        if (CheckCollisionRecs(p, tile)) {
+                            if (d->keys.up || d->keys.down)
+                            climbing = true;
+                        }
+                    }
+                } else if (d->map.collisiondata[idx] == COL_SOLID) {
+                    auto pb = Rectangle{px+inset/2, py + ps - colmask, ps-inset, colmask};
+                    auto pt = Rectangle{px+inset/2, py, ps-inset, colmask};
+                    auto pl = Rectangle{px, py+inset/2, colmask, ps-inset};
+                    auto pr = Rectangle{px+ps-colmask, py+inset/2, colmask, ps-inset};
+                    if (CheckCollisionRecs(pb, tile)) { // Collision Bottom
+                        d->player.pos.y = yt * UNIT - ps + 1;
+                        d->player.vel.y = 0;
+                        grounded = true;
+                    } else if (CheckCollisionRecs(pt, tile)) { // Collision Top
+                        d->player.pos.y = yt * UNIT + UNIT;
+                        d->player.vel.y = 0;
+                    } else if (CheckCollisionRecs(pl, tile)) { // Collision Left
+                        d->player.pos.x = xt * UNIT + UNIT - 1;
+                        d->player.vel.x = max(0.0f, d->player.vel.x);
+                        walled = -1;
+                    } else if (CheckCollisionRecs(pr, tile)) { // Collision Right
+                        d->player.pos.x = xt * UNIT - ps + 1;
+                        d->player.vel.x = min(0.0f, d->player.vel.x);
+                        walled = 1;
+                    }
 
+                }
             }
         }
     }
-    if (!grounded) {
-        if (walled != 0) {
-            d->player.state = PlayerState::Sliding;
-        } else {
-            d->player.state = PlayerState::Air;
+    if (d->player.state != PlayerState::Climbing) {
+        if (!grounded) {
+            if (walled != 0) {
+                d->player.state = PlayerState::Sliding;
+            } else {
+                d->player.state = PlayerState::Air;
+            }
         }
+    }
+    if (climbing) {
+        d->player.state = PlayerState::Climbing;
+    }
+    if ((!climbing && d->player.state == PlayerState::Climbing) || d->keys.b) {
+        d->player.state = PlayerState::Air;
     }
 
     bool jumped = false;
     if (d->keys.a) {
-        if (grounded && GetTime() - d->player.lastJumped > JUMP_COOLDOWN) {
+        if (d->player.state == PlayerState::Climbing) {
+            d->player.vel.y = JUMP_VELOCITY;
+            jumped = true;
+            d->player.lastJumped = GetTime();
+            d->player.state = PlayerState::Air;
+        } else if (grounded && GetTime() - d->player.lastJumped > JUMP_COOLDOWN) {
             d->player.vel.y = JUMP_VELOCITY;
             jumped = true;
             d->player.lastJumped = GetTime();
@@ -141,6 +168,13 @@ void update(GameData *d, float delta) {
         d->player.vel = Vector2Scale(d->player.vel, FRICTION_FACTOR);
     } else if (d->player.state == PlayerState::Air) {
         d->player.vel.x = d->player.vel.x * AIR_FRICTION_FACTOR;
+    } else if (d->player.state == PlayerState::Climbing) {
+        d->player.vel.x = 0;
+        d->player.vel.y = 0;
+        if (d->keys.left) d->player.vel.x -= CLIMB_SPEED;
+        if (d->keys.right) d->player.vel.x += CLIMB_SPEED;
+        if (d->keys.up) d->player.vel.y -= CLIMB_SPEED;
+        if (d->keys.down) d->player.vel.y += CLIMB_SPEED;
     }
 
     printf("Pos (%f,%f). Vel(%f,%f) Delta(%f, %f)\n", d->player.pos.x, d->player.pos.y, d->player.vel.x, d->player.vel.y, d->player.vel.x * delta, d->player.vel.y * delta);
@@ -151,6 +185,14 @@ void update(GameData *d, float delta) {
     if (jumped && dv.y < -eps && dv.y > -1) { dv.y = -1; }
     d->player.pos = Vector2Add(d->player.pos, dv);
     d->cam.target = d->player.pos;
+}
+
+void update(GameData *d, float delta) {
+
+    if (d->keys.start) {SetScreen(SCREEN_EDITOR);}
+
+    updatePlayer(d, delta);
+
 
 }
 
