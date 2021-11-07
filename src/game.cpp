@@ -1,11 +1,13 @@
 #include <raylib.h>
 #include <raymath.h>
 
+#include "constants.h"
 #include "game.h"
 #include "map.h"
 #include "util.h"
 
-const float UNIT = 50;
+const bool DEBUG_DRAWING = false;
+
 
 
 GameData InitGame(Map m) {
@@ -42,23 +44,13 @@ void input(GameData *d) {
     d->keys.down   = IsKeyDown(KEY_S) || IsKeyDown(KEY_J) || IsKeyDown(KEY_DOWN);
     d->keys.left   = IsKeyDown(KEY_A) || IsKeyDown(KEY_H) || IsKeyDown(KEY_LEFT);
     d->keys.right  = IsKeyDown(KEY_D) || IsKeyDown(KEY_L) || IsKeyDown(KEY_RIGHT);
-    d->keys.a      = IsKeyDown(KEY_SPACE) || IsKeyDown(MOUSE_BUTTON_LEFT);
-    d->keys.b      = IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(MOUSE_BUTTON_RIGHT);
+    d->keys.a      = IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    d->keys.b      = IsKeyDown(KEY_LEFT_SHIFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
     d->keys.start  = IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_Q);
     d->keys.select = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_E);
 
 }
 
-const float ACCEL = 10*UNIT;
-const float MAX_VELOCITY = 5*UNIT;
-const float JUMP_VELOCITY = -8*UNIT;
-const float FRICTION_FACTOR = 0.9f;
-const float AIR_FRICTION_FACTOR = 0.99f;
-const float GRAVITY = 35*UNIT;
-const float SPRINT_SPEED_MODIFIER = 2.5f;
-const float JUMP_COOLDOWN = 0.4f;
-const float JUMP_EXTENSION_TIME = 0.2f;
-const float CLIMB_SPEED = 5*UNIT;
 
 void updatePlayer(GameData *d, float delta) {
     auto effective_max_velocity = d->keys.b ? SPRINT_SPEED_MODIFIER * MAX_VELOCITY : MAX_VELOCITY;
@@ -82,7 +74,7 @@ void updatePlayer(GameData *d, float delta) {
     float py = d->player.pos.y;
     float ps = d->player.size;
     float inset = UNIT / 5;
-    float colmask = UNIT / 5;
+    float colmask = UNIT / 10;
     float tiny_colmask = 1;
     bool grounded = false;
     bool climbing = false;
@@ -104,7 +96,7 @@ void updatePlayer(GameData *d, float delta) {
                     }
                 } else if (d->map.collisiondata[idx] == COL_ONE_WAY) {
                     auto pb = Rectangle{px+inset/2, py + ps - tiny_colmask, ps-inset, tiny_colmask};
-                    auto onewaytile = Rectangle{xt*UNIT, yt*UNIT, UNIT/5, UNIT};
+                    auto onewaytile = Rectangle{xt*UNIT, yt*UNIT, UNIT, UNIT/5};
                     if (d->player.vel.y > 0 && CheckCollisionRecs(pb, onewaytile)) { // Collision Bottom
                         d->player.pos.y = yt * UNIT - ps + 1;
                         d->player.vel.y = 0;
@@ -222,6 +214,16 @@ void draw(GameData *d) {
             int x = (i % m.width) * UNIT;
             int y = (i / m.width) * UNIT;
             DrawTextureJ(img[m.tiledata[i]], x, y, UNIT);
+            if (DEBUG_DRAWING) {
+                if (m.collisiondata[i] == COL_ONE_WAY) {
+                    DrawRectangleRec(Rectangle{(float)x, (float)y, UNIT, UNIT/5}, ColorAlpha(ORANGE, 0.5));
+                } else if (m.collisiondata[i] == COL_SOLID) {
+                    DrawRectangleRec(Rectangle{(float)x, (float)y, UNIT, UNIT}, ColorAlpha(BLUE, 0.5));
+                } else if (m.collisiondata[i] == COL_CLIMB) {
+                    DrawRectangleRec(Rectangle{(float)x, (float)y, UNIT, UNIT}, ColorAlpha(GRAY, 0.5));
+                }
+            }
+
         }
     }
 
