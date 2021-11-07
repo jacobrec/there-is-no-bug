@@ -60,15 +60,16 @@ void input(GameData *d) {
 
 void updatePlayer(GameData *d, float delta) {
     auto effective_max_velocity = d->keys.b ? SPRINT_SPEED_MODIFIER * MAX_VELOCITY : MAX_VELOCITY;
+    auto effective_accel = d->keys.b ? SPRINT_ACCEL_MODIFIER * ACCEL : ACCEL;
     if (d->player.state == PlayerState::Climbing) {
     } else {
         d->player.state = PlayerState::Standing;
         if (d->keys.left && !d->keys.right) {
-            d->player.vel.x -= ACCEL * delta;
+            d->player.vel.x -= effective_accel * delta;
             d->player.vel.x = max(d->player.vel.x, -effective_max_velocity);
             d->player.state = PlayerState::Running;
         } else if (d->keys.right && !d->keys.left) {
-            d->player.vel.x += ACCEL * delta;
+            d->player.vel.x += effective_accel * delta;
             d->player.vel.x = min(d->player.vel.x, effective_max_velocity);
             d->player.state = PlayerState::Running;
         }
@@ -165,7 +166,7 @@ void updatePlayer(GameData *d, float delta) {
             d->player.vel.y = JUMP_VELOCITY;
         } else if (walled && GetTime() - d->player.lastJumped > JUMP_COOLDOWN) {
             d->player.vel.y = JUMP_VELOCITY;
-            d->player.vel.x = - walled * MAX_VELOCITY / 2;
+            d->player.vel.x = - walled * WALLJUMP_VELOCITY;
             jumped = true;
             d->player.lastJumped = GetTime();
         }
