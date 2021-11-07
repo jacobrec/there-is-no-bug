@@ -6,7 +6,6 @@
 #include "map.h"
 #include "util.h"
 
-const bool DEBUG_DRAWING = false;
 
 
 
@@ -33,6 +32,7 @@ GameData InitGame(Map m) {
             gd.player.lastJumped = GetTime();
         }
     }
+    ReloadConstants();
 
 
     return gd;
@@ -48,6 +48,12 @@ void input(GameData *d) {
     d->keys.b      = IsKeyDown(KEY_LEFT_SHIFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
     d->keys.start  = IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_Q);
     d->keys.select = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_E);
+
+    if (DEBUG) {
+        if (IsKeyPressed(KEY_R)) {
+            ReloadConstants();
+        }
+    }
 
 }
 
@@ -178,7 +184,7 @@ void updatePlayer(GameData *d, float delta) {
         if (d->keys.down) d->player.vel.y += CLIMB_SPEED;
     }
 
-    printf("Pos (%f,%f). Vel(%f,%f) Delta(%f, %f)\n", d->player.pos.x, d->player.pos.y, d->player.vel.x, d->player.vel.y, d->player.vel.x * delta, d->player.vel.y * delta);
+    // printf("Pos (%f,%f). Vel(%f,%f) Delta(%f, %f)\n", d->player.pos.x, d->player.pos.y, d->player.vel.x, d->player.vel.y, d->player.vel.x * delta, d->player.vel.y * delta);
     auto dv = Vector2Scale(d->player.vel, delta);
     float eps = 0.1;
     if ((d->keys.right || jumped) && dv.x > eps && dv.x < 1) { dv.x = 1; }

@@ -1,0 +1,11 @@
+UNIT                  = 50
+ACCEL                 = 10*UNIT
+MAX_VELOCITY          = 5*UNIT
+JUMP_VELOCITY         = -8*UNIT
+FRICTION_FACTOR       = 0.9
+AIR_FRICTION_FACTOR   = 0.99
+GRAVITY               = 35*UNIT
+SPRINT_SPEED_MODIFIER = 2.5
+JUMP_COOLDOWN         = 0.4
+JUMP_EXTENSION_TIME   = 0.125
+CLIMB_SPEED           = 5*UNIT
