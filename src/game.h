@@ -52,6 +52,7 @@ public:
     float size;
     PlayerState state;
     float lastJumped;
+    int lastWalljumped;
     void update(void* d, float delta) override;
     void draw() override;
 };

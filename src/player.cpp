@@ -9,6 +9,7 @@ Player::Player(float x, float y) {
     size = UNIT;
     state = PlayerState::Standing;
     lastJumped = GetTime();
+    lastWalljumped = 0;
 }
 
 void Player::draw() {
@@ -113,6 +114,10 @@ void updatePlayer(Player* p, GameData *d, float delta) {
         p->state = PlayerState::Air;
     }
 
+    if (grounded) {
+        p->lastWalljumped = 0;
+    }
+
     bool jumped = false;
     if (d->keys.a) {
         if (p->state == PlayerState::Climbing) {
@@ -127,10 +132,13 @@ void updatePlayer(Player* p, GameData *d, float delta) {
         } else if (GetTime() - p->lastJumped < JUMP_EXTENSION_TIME) {
             p->vel.y = JUMP_VELOCITY;
         } else if (walled && GetTime() - p->lastJumped > JUMP_COOLDOWN) {
-            p->vel.y = JUMP_VELOCITY;
-            p->vel.x = - walled * WALLJUMP_VELOCITY;
-            jumped = true;
-            p->lastJumped = GetTime();
+            if (p->lastWalljumped != walled) {
+                p->vel.y = JUMP_VELOCITY;
+                p->vel.x = - walled * WALLJUMP_VELOCITY;
+                jumped = true;
+                p->lastJumped = GetTime();
+                p->lastWalljumped = walled;
+            }
         }
     }
 
