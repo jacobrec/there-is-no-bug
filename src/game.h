@@ -9,12 +9,13 @@ using namespace std;
 enum class PlayerState {
     Air, Sliding, Running, Standing, Climbing
 };
-struct Player {
-    Vector2 pos;
-    Vector2 vel;
-    float size;
-    PlayerState state;
-    float lastJumped;
+
+class Entity {
+public:
+    virtual ~Entity();
+    virtual void update(void* d, float delta) = 0;
+    virtual void draw() = 0;
+    virtual bool isValid() { return true; };
 };
 
 struct Keymap {
@@ -31,10 +32,48 @@ struct Keymap {
 struct GameData {
     Map map;
     Camera2D cam;
-    Player player;
+    vector<Entity*> entities;
     vector<Texture2D> images;
     Keymap keys;
 };
 
 GameData InitGame(Map m);
 void RenderGame(GameData *d);
+
+//////////////
+// Entities //
+//////////////
+
+class Player : public Entity {
+public:
+    Player(float x, float y);
+    Vector2 pos;
+    Vector2 vel;
+    float size;
+    PlayerState state;
+    float lastJumped;
+    void update(void* d, float delta) override;
+    void draw() override;
+};
+
+class Kong : public Entity {
+public:
+    Kong(float x, float y);
+    int animationState; // 0 is still, 1 is beating chest, 2 is throwing
+    float animationTime;
+    Vector2 pos;
+    float size;
+    void update(void* d, float delta) override;
+    void draw() override;
+};
+
+class KongBarrel : public Entity {
+public:
+    KongBarrel(float x, float y, int type);
+    Vector2 pos;
+    float size;
+    int type;
+    void update(void* d, float delta) override;
+    void draw() override;
+    bool isValid() override;
+};

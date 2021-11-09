@@ -2,4 +2,4 @@
 Entry for the 2021 Github Game off
 
 ## Dependencies
-- Raylib 3.7.0
+- Raylib 4.0.0
