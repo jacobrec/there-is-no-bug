@@ -9,14 +9,17 @@ using namespace std;
 enum class PlayerState {
     Air, Sliding, Running, Standing, Climbing
 };
+enum class GameState {
+    Failed, Running, Succeeded
+};
 
 class Entity {
 public:
     Vector2 pos;
     float size;
     virtual ~Entity();
-    virtual void update(void* d, float delta) = 0;
-    virtual void draw() = 0;
+    virtual void update(void* d, float delta) {};
+    virtual void draw() {};
     virtual bool isValid() { return true; };
     virtual void collidesWith(void* d, Entity* other) { };
 };
@@ -38,7 +41,7 @@ struct GameData {
     vector<Entity*> entities;
     vector<Texture2D> images;
     Keymap keys;
-    bool playerDied;
+    GameState state;
 };
 
 GameData InitGame(Map m);
@@ -81,4 +84,10 @@ public:
     void update(void* d, float delta) override;
     void draw() override;
     bool isValid() override;
+};
+
+class WinCondition : public Entity {
+public:
+    WinCondition(float x, float y);
+    void draw() override;
 };

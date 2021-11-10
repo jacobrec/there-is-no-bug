@@ -20,7 +20,7 @@ GameData InitGame(Map m) {
     gd.cam.offset = Vector2{400, 225};
     gd.cam.zoom = 1;
     gd.cam.rotation = 0;
-    gd.playerDied = false;
+    gd.state = GameState::Running;
     int tileCount = m.tileset.tiles.size();
     vector<int> paintedTiles(m.width * m.height, 0);
 
@@ -36,6 +36,9 @@ GameData InitGame(Map m) {
             gd.entities.push_back(p);
         } else if (isSpecial(1, m.tiledata[i])) { // special 1 is Kong
             Kong* k = new Kong(x, y);
+            gd.entities.push_back(k);
+        } else if (isSpecial(2, m.tiledata[i])) { // special 2 is next level
+            WinCondition* k = new WinCondition(x, y);
             gd.entities.push_back(k);
         }
     }
@@ -138,16 +141,22 @@ void draw(GameData *d) {
 
 }
 
+
 // This one doesn't move with player
 void drawHUD(GameData *d) {
-    if (d->playerDied) {
-        string msg = "You Died :(";
+    auto fancyDrawText = [](string msg, int x, int y) {
         const char* txt = msg.c_str();
         int size = 50;
         float tw = MeasureText(txt, size);
         int padd = 10;
-        DrawRectangle(400 - tw/2 - padd, 225 - size/2 - padd, tw+ 2 * padd, size + 2 * padd, ColorAlpha(RAYWHITE, 0.5));
-        DrawText(txt, 400 - tw/2, 225 - size/2, size, BLACK);
+        DrawRectangle(x - tw/2 - padd, y - size/2 - padd, tw+ 2 * padd, size + 2 * padd, ColorAlpha(RAYWHITE, 0.5));
+        DrawText(txt, x - tw/2, y - size/2, size, BLACK);
+    };
+
+    if (d->state == GameState::Failed) {
+        fancyDrawText("You Died :(", 400, 225);
+    } else if (d->state == GameState::Succeeded) {
+        fancyDrawText("You Win :)", 400, 225);
     }
 }
 
@@ -158,7 +167,7 @@ void doUpdates(GameData *d) {
     lastTime += delta;
     if (delta > 0.1) {return;}
 
-    if (!d->playerDied) {
+    if (d->state == GameState::Running) {
         float updateTime = 0;
         while (updateTime < delta) {
             update(d, PHYSICS_TIMESTEP);

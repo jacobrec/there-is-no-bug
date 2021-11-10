@@ -173,6 +173,18 @@ void Player::update(void *d, float delta) {
 void Player::collidesWith(void *d, Entity* other) {
     GameData* data = (GameData*)d;
     if (KongBarrel* p = dynamic_cast<KongBarrel*>(other)) {
-        data->playerDied = true;
+        data->state = GameState::Failed;
+    } else if (WinCondition* p = dynamic_cast<WinCondition*>(other)) {
+        data->state = GameState::Succeeded;
     }
+}
+
+
+WinCondition::WinCondition(float x, float y) {
+    pos = Vector2{x, y};
+    size = UNIT;
+}
+
+void WinCondition::draw() {
+    DrawRectangle(this->pos.x, this->pos.y, UNIT, UNIT, ColorAlpha(WHITE, 0.5));
 }
