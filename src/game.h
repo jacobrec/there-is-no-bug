@@ -10,7 +10,7 @@ enum class PlayerState {
     Air, Sliding, Running, Standing, Climbing
 };
 enum class GameState {
-    Failed, Running, Succeeded
+    Failed, Running, Succeeded, Paused
 };
 
 class Entity {

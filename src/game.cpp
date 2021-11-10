@@ -48,6 +48,11 @@ GameData InitGame(Map m) {
     return gd;
 }
 
+void restartLevel(GameData* d) {
+    GameData d2 = InitGame(d->map);
+    *d = d2;
+}
+
 void input(GameData *d) {
 
     d->keys.up     = IsKeyDown(KEY_W) || IsKeyDown(KEY_K) || IsKeyDown(KEY_UP);
@@ -71,6 +76,7 @@ void input(GameData *d) {
 
 void update(GameData *d, float delta) {
     if (d->keys.start) {SetScreen(SCREEN_EDITOR);}
+    if (d->keys.select) {d->state = GameState::Paused;}
 
     set<pair<Entity*, Entity*>> collisions;
     int size = d->entities.size();
@@ -110,7 +116,7 @@ void DrawTextureJ(Texture2D texture, float x, float y, float size) {
     DrawTextureEx(texture, Vector2{x, y}, 0, scale, WHITE);
 }
 
-void draw(GameData *d) {
+void drawGame(GameData *d) {
     int tileCount = (int) d->images.size();
     ClearBackground(RAYWHITE);
 
@@ -137,28 +143,111 @@ void draw(GameData *d) {
     for (Entity* e : d->entities) {
         e->draw();
     }
-
-
 }
 
+void fancyDrawText (string msg, int x, int y, bool centered) {
+    const char* txt = msg.c_str();
+    int size = 50;
+    float tw = MeasureText(txt, size);
+    float rw = tw;
+    if (!centered) {
+        tw = 0;
+    }
+    int padd = 10;
+    DrawRectangle(x - tw/2 - padd, y - size/2 - padd, rw + 2 * padd, size + 2 * padd, ColorAlpha(RAYWHITE, 0.5));
+    DrawText(txt, x - tw/2, y - size/2, size, BLACK);
+};
+
+void handlePauseState(GameData* d) {
+    ClearBackground(RAYWHITE);
+    static int pauseState = 0;
+    static float pauseStateShiftCooldown = 0.2;
+    auto fdt = [] (string msg, int x, int y, bool centered, bool selected) {
+        auto m2 = msg;
+        if (selected) {
+            m2 = "[" + m2 + "]";
+        }
+        fancyDrawText(m2, x, y, centered);
+
+    };
+    fancyDrawText("Paused", 400, 100, true);
+    fdt("Continue", 200, 160, false, pauseState == 0);
+    fdt("Restart", 200, 220, false, pauseState == 1);
+    fdt("Title screen", 200, 280, false, pauseState == 2);
+    fdt("Quit application", 200, 340, false, pauseState == 3);
+
+    static float lastTime = 0;
+    float delta = GetTime() - lastTime;
+    lastTime += delta;
+    pauseStateShiftCooldown -= delta;
+    if (pauseStateShiftCooldown < 0 && (d->keys.up || d->keys.down)) {
+        if (d->keys.up) {
+            pauseState--;
+            if (pauseState < 0) {pauseState = 0;}
+        } else if (d->keys.down) {
+            pauseState++;
+            if (pauseState > 3) {pauseState = 3;}
+        }
+        pauseStateShiftCooldown = 0.2;
+    }
+
+    if (d->keys.a) {
+        switch (pauseState) {
+        case 0: // Continue
+            d->state = GameState::Running;
+            break;
+        case 1: // Restart
+
+            break;
+        case 2: // Title Screen
+            break;
+        case 3: // Quit Application
+            break;
+        }
+
+        pauseState = 0;
+    } else if (d->keys.b) {
+        d->state = GameState::Running;
+        pauseState = 0;
+    }
+}
+
+void handleGameOverScreen (GameData *d) {
+    static float gameOverCooldown;
+    static float lastTime = 0;
+    float delta = GetTime() - lastTime;
+    lastTime += delta;
+    if (delta < 0.1) {
+        gameOverCooldown -= delta;
+    } else {
+        gameOverCooldown = 0.4;
+    }
+    fancyDrawText("You Died :(", 400, 225, true);
+    if (gameOverCooldown < 0 && (d->keys.a || d->keys.b)) {
+        restartLevel(d);
+    }
+    
+}
 
 // This one doesn't move with player
 void drawHUD(GameData *d) {
-    auto fancyDrawText = [](string msg, int x, int y) {
-        const char* txt = msg.c_str();
-        int size = 50;
-        float tw = MeasureText(txt, size);
-        int padd = 10;
-        DrawRectangle(x - tw/2 - padd, y - size/2 - padd, tw+ 2 * padd, size + 2 * padd, ColorAlpha(RAYWHITE, 0.5));
-        DrawText(txt, x - tw/2, y - size/2, size, BLACK);
-    };
-
     if (d->state == GameState::Failed) {
-        fancyDrawText("You Died :(", 400, 225);
+        handleGameOverScreen(d);
     } else if (d->state == GameState::Succeeded) {
-        fancyDrawText("You Win :)", 400, 225);
+        fancyDrawText("You Win :)", 400, 225, true);
+    } else if (d->state == GameState::Paused) {
+        handlePauseState(d);
     }
 }
+
+// This one does
+void draw(GameData *d) {
+    if (d->state == GameState::Running) {
+        drawGame(d);
+    }
+}
+
+
 
 const float PHYSICS_TIMESTEP = 0.005f;
 void doUpdates(GameData *d) {
@@ -173,6 +262,8 @@ void doUpdates(GameData *d) {
             update(d, PHYSICS_TIMESTEP);
             updateTime += PHYSICS_TIMESTEP;
         }
+    } else if (d->state == GameState::Paused) {
+        
     }
 }
 
