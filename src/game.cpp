@@ -82,7 +82,7 @@ void update(GameData *d, float delta) {
     int size = d->entities.size();
     for (int i = 0; i < size; i++) {
         Entity* e = d->entities[i];
-        e->update((void*)d, delta);
+        e->update(d, delta);
 
         // If we ever have lots of entities, something more effecient will need to be done. BSP?
         Rectangle re = Rectangle{e->pos.x, e->pos.y, e->size, e->size};
@@ -102,8 +102,8 @@ void update(GameData *d, float delta) {
     }
 
     for (auto c : collisions) {
-        c.first->collidesWith((void*)d, c.second);
-        c.second->collidesWith((void*)d, c.first);
+        c.first->collidesWith(d, c.second);
+        c.second->collidesWith(d, c.first);
     }
 
     auto res = remove_if(d->entities.begin(), d->entities.end(), [](auto const x) { return !x->isValid(); });
@@ -242,7 +242,7 @@ void drawHUD(GameData *d) {
 
 // This one does
 void draw(GameData *d) {
-    if (d->state == GameState::Running) {
+    if (d->state == GameState::Running || d->state == GameState::Failed) {
         drawGame(d);
     }
 }

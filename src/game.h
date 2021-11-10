@@ -12,16 +12,16 @@ enum class PlayerState {
 enum class GameState {
     Failed, Running, Succeeded, Paused
 };
-
+struct GameData;
 class Entity {
 public:
     Vector2 pos;
     float size;
     virtual ~Entity();
-    virtual void update(void* d, float delta) {};
+    virtual void update(GameData* d, float delta) {};
     virtual void draw() {};
     virtual bool isValid() { return true; };
-    virtual void collidesWith(void* d, Entity* other) { };
+    virtual void collidesWith(GameData* d, Entity* other) { };
 };
 
 struct Keymap {
@@ -58,9 +58,9 @@ public:
     PlayerState state;
     float lastJumped;
     int lastWalljumped;
-    void update(void* d, float delta) override;
+    void update(GameData* d, float delta) override;
     void draw() override;
-    void collidesWith(void* d, Entity* other) override;
+    void collidesWith(GameData* d, Entity* other) override;
 
 };
 
@@ -69,7 +69,7 @@ public:
     Kong(float x, float y);
     int animationState; // 0 is still, 1 is beating chest, 2 is throwing
     float animationTime;
-    void update(void* d, float delta) override;
+    void update(GameData* d, float delta) override;
     void draw() override;
 };
 
@@ -81,7 +81,7 @@ public:
     bool preferLeft;
     int bounces;
 
-    void update(void* d, float delta) override;
+    void update(GameData* d, float delta) override;
     void draw() override;
     bool isValid() override;
 };

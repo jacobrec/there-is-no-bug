@@ -18,8 +18,7 @@ Kong::Kong(float x, float y) {
     animationState = 0;
 }
 
-void Kong::update(void* data, float delta) {
-    GameData* d = (GameData*) data;
+void Kong::update(GameData* d, float delta) {
     animationTime += delta;
 
     if (animationState == 0) {
@@ -84,8 +83,7 @@ KongBarrel::KongBarrel(float x, float y, int type) {
     bounces = 0;
 }
 
-void KongBarrel::update(void* data, float delta) {
-    GameData* d = (GameData*) data;
+void KongBarrel::update(GameData* d, float delta) {
     if (type == 0) { // type Rock
         // No update needed
     } else {

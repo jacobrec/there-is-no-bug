@@ -165,13 +165,12 @@ void updatePlayer(Player* p, GameData *d, float delta) {
     d->cam.target = p->pos;
 }
 
-void Player::update(void *d, float delta) {
-    updatePlayer(this, (GameData*)d, delta);
+void Player::update(GameData *d, float delta) {
+    updatePlayer(this, d, delta);
 }
 
 
-void Player::collidesWith(void *d, Entity* other) {
-    GameData* data = (GameData*)d;
+void Player::collidesWith(GameData *data, Entity* other) {
     if (KongBarrel* p = dynamic_cast<KongBarrel*>(other)) {
         data->state = GameState::Failed;
     } else if (WinCondition* p = dynamic_cast<WinCondition*>(other)) {
