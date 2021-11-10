@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <set>
 
 #include <raylib.h>
 #include <raymath.h>
@@ -19,6 +20,7 @@ GameData InitGame(Map m) {
     gd.cam.offset = Vector2{400, 225};
     gd.cam.zoom = 1;
     gd.cam.rotation = 0;
+    gd.playerDied = false;
     int tileCount = m.tileset.tiles.size();
     vector<int> paintedTiles(m.width * m.height, 0);
 
@@ -67,11 +69,34 @@ void input(GameData *d) {
 void update(GameData *d, float delta) {
     if (d->keys.start) {SetScreen(SCREEN_EDITOR);}
 
+    set<pair<Entity*, Entity*>> collisions;
     int size = d->entities.size();
     for (int i = 0; i < size; i++) {
         Entity* e = d->entities[i];
         e->update((void*)d, delta);
+
+        // If we ever have lots of entities, something more effecient will need to be done. BSP?
+        Rectangle re = Rectangle{e->pos.x, e->pos.y, e->size, e->size};
+        for (int j = 0; j < size; j++) {
+            Entity* o = d->entities[j];
+            Rectangle ro = Rectangle{o->pos.x, o->pos.y, o->size, o->size};
+            if (CheckCollisionRecs(re, ro)) {
+                if (o != e) {
+                    if (o < e) {
+                        collisions.insert(pair<Entity*, Entity*>(o, e));
+                    } else {
+                        collisions.insert(pair<Entity*, Entity*>(e, o));
+                    }
+                }
+            }
+        }
     }
+
+    for (auto c : collisions) {
+        c.first->collidesWith((void*)d, c.second);
+        c.second->collidesWith((void*)d, c.first);
+    }
+
     auto res = remove_if(d->entities.begin(), d->entities.end(), [](auto const x) { return !x->isValid(); });
     d->entities.erase(res, d->entities.end());
 }
@@ -110,27 +135,48 @@ void draw(GameData *d) {
         e->draw();
     }
 
+
 }
 
+// This one doesn't move with player
+void drawHUD(GameData *d) {
+    if (d->playerDied) {
+        string msg = "You Died :(";
+        const char* txt = msg.c_str();
+        int size = 50;
+        float tw = MeasureText(txt, size);
+        int padd = 10;
+        DrawRectangle(400 - tw/2 - padd, 225 - size/2 - padd, tw+ 2 * padd, size + 2 * padd, ColorAlpha(RAYWHITE, 0.5));
+        DrawText(txt, 400 - tw/2, 225 - size/2, size, BLACK);
+    }
+}
 
 const float PHYSICS_TIMESTEP = 0.005f;
-void RenderGame(GameData *d) {
-    input(d);
+void doUpdates(GameData *d) {
     static float lastTime = 0;
     float delta = GetTime() - lastTime;
     lastTime += delta;
     if (delta > 0.1) {return;}
 
-    float updateTime = 0;
-    while (updateTime < delta) {
-        update(d, PHYSICS_TIMESTEP);
-        updateTime += PHYSICS_TIMESTEP;
+    if (!d->playerDied) {
+        float updateTime = 0;
+        while (updateTime < delta) {
+            update(d, PHYSICS_TIMESTEP);
+            updateTime += PHYSICS_TIMESTEP;
+        }
     }
+}
+
+void RenderGame(GameData *d) {
+    input(d);
+
+    doUpdates(d);
 
     BeginDrawing();
     BeginMode2D(d->cam);
     draw(d);
     EndMode2D();
+    drawHUD(d);
     EndDrawing();
 
 }

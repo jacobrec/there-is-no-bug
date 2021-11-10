@@ -169,3 +169,10 @@ void Player::update(void *d, float delta) {
     updatePlayer(this, (GameData*)d, delta);
 }
 
+
+void Player::collidesWith(void *d, Entity* other) {
+    GameData* data = (GameData*)d;
+    if (KongBarrel* p = dynamic_cast<KongBarrel*>(other)) {
+        data->playerDied = true;
+    }
+}

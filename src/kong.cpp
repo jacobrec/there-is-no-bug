@@ -9,6 +9,7 @@
 /////////////////
 
 const float COOLDOWN = 5;
+const float BARREL_SPEED = 3 * UNIT;
 
 Kong::Kong(float x, float y) {
     pos = Vector2{x,y};
@@ -73,19 +74,60 @@ void Kong::draw() {
 KongBarrel::KongBarrel(float x, float y, int type) {
     size = UNIT;
     pos = Vector2 {x, y};
+    if (type == 0) {
+        vel = Vector2 {0, 2 * BARREL_SPEED};
+    } else {
+        vel = Vector2 {BARREL_SPEED, 0};
+    }
     this->type = type;
+    preferLeft = false;
+    bounces = 0;
 }
 
 void KongBarrel::update(void* data, float delta) {
     GameData* d = (GameData*) data;
     if (type == 0) { // type Rock
-        pos.y += 5 * UNIT * delta;
+        // No update needed
     } else {
-        // Caclulate movements for falling barrels
+        // Calculate movements for falling barrels
+        int x = (int)(pos.x / UNIT);
+        int y = (int)(pos.y / UNIT);
+        auto i = [&d] (int x, int y) { return x + y * d->map.width; };
+        auto brec = Rectangle{pos.x, pos.y, size, size};
+        auto collides = [&i, &d, &brec](int x, int y) {
+            int t = d->map.collisiondata[i(x, y)];
+            if (t == COL_SOLID || t == COL_ONE_WAY) {
+                auto trec = Rectangle{x * UNIT, y * UNIT, UNIT, UNIT};
+                return CheckCollisionRecs(trec, brec);
+            }
+            return false;
+        };
+        bool bottom = collides(x-1, y+1) || collides(x, y+1) || collides(x+1, y+1);
+        bool left = collides(x, y);
+        bool right = collides(x+1, y);
+
+        if (!bottom) { // Nothing underneath
+            vel = Vector2 {0, BARREL_SPEED};
+        } else if (!preferLeft && !right) { // Nothing right
+            vel = Vector2 {BARREL_SPEED, 0};
+        } else if (!preferLeft && right) {
+            preferLeft = true;
+            vel = Vector2 {-BARREL_SPEED, 0};
+            bounces ++;
+        } else if (preferLeft && !left) { // Nothing Left
+            vel = Vector2 {-BARREL_SPEED, 0};
+        } else if (preferLeft && left) {
+            preferLeft = false;
+            vel = Vector2 {BARREL_SPEED, 0};
+            bounces ++;
+        } else {
+        }
     }
+    pos.x += vel.x * delta;
+    pos.y += vel.y * delta;
 }
 bool KongBarrel::isValid() {
-    return true;
+    return bounces <= 3;
 }
 
 void KongBarrel::draw() {
