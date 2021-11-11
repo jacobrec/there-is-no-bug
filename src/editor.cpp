@@ -18,13 +18,15 @@ void run() {
     SetScreen(SCREEN_GAME);
 }
 
-EditorData InitEditor() {
+EditorData InitEditor(int level) {
     if (ListDirectory("assets/maps/").size() == 0) {
         printf("No maps found. Unable to load editor. Please create a map file: $ touch assets/maps/mapname.map");
     }
     
+    Level l ("assets/levels/" + to_string(level) + ".toml");
     Map m = LoadMap(ListDirectory("assets/maps/")[0]);
     EditorData ed = EditorData {
+        l,
         m, // Map m
         0, // int tilesetChoice
         0, // int mapChoice

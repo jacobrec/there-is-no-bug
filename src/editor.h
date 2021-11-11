@@ -6,10 +6,12 @@
 
 #include "map.h"
 #include "util.h"
+#include "level.h"
 
 using namespace std;
 
 struct EditorData {
+    Level l;
     Map m;
     int tilesetChoice;
     int mapChoice;
@@ -25,7 +27,7 @@ struct EditorData {
     bool shouldPlay;
 };
 
-EditorData InitEditor();
+EditorData InitEditor(int level);
 void RenderEditor(EditorData *d);
 
 #endif

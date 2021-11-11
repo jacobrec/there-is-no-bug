@@ -1,0 +1,6 @@
+name = "Level 1"
+map = "bonky_kong.map"
+specials = ["player", "enemy kong", "win"]
+dialogs = [
+    "Dialog test",
+]

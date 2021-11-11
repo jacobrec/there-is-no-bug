@@ -3,6 +3,7 @@
 #include <raylib.h>
 
 #include "map.h"
+#include "level.h"
 
 using namespace std;
 
@@ -36,6 +37,7 @@ struct Keymap {
 };
 
 struct GameData {
+    string level;
     Map map;
     Camera2D cam;
     vector<Entity*> entities;

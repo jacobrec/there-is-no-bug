@@ -10,48 +10,12 @@
 #include "util.h"
 
 
-
-
-GameData InitGame(Map m) {
-    GameData gd;
-    gd.map = m;
-    gd.images = TilesetTextures(&m.tileset);
-    gd.cam = Camera2D { };
-    gd.cam.offset = Vector2{400, 225};
-    gd.cam.zoom = 1;
-    gd.cam.rotation = 0;
-    gd.state = GameState::Running;
-    int tileCount = m.tileset.tiles.size();
-    vector<int> paintedTiles(m.width * m.height, 0);
-
-    auto isSpecial = [&tileCount](int num, int tiledata) {
-        return tiledata == tileCount + num;
-    };
-
-    for (int i = 0; i < (int)m.tiledata.size(); i++) {
-        float x = (i % m.width) * UNIT;
-        float y = (i / m.width) * UNIT;
-        if (isSpecial(0, m.tiledata[i])) { // special 0 is player
-            Player* p = new Player(x, y);
-            gd.entities.push_back(p);
-        } else if (isSpecial(1, m.tiledata[i])) { // special 1 is Kong
-            Kong* k = new Kong(x, y);
-            gd.entities.push_back(k);
-        } else if (isSpecial(2, m.tiledata[i])) { // special 2 is next level
-            WinCondition* k = new WinCondition(x, y);
-            gd.entities.push_back(k);
-        }
-    }
-    ReloadConstants();
-
-
-    return gd;
-}
-
 void restartLevel(GameData* d) {
-    GameData d2 = InitGame(d->map);
-    *d = d2;
+    Level l (d->level);
+    *d = l.GenerateGameData();
+    printf("TODO: Restarting\n");
 }
+
 
 void input(GameData *d) {
 
