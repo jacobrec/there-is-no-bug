@@ -59,6 +59,16 @@ GameData Level::GenerateGameData() {
     gd.map = m;
     gd.images = TilesetTextures(&m.tileset);
 
+    // Setup dialog
+    gd.dia.idx = 0;
+    gd.dia.current_dialog = 0;
+    gd.dia.offset = Vector2{0,0};
+    gd.dia.cooldown = 0.0;
+    gd.dia.msg = "";
+    gd.dia.data = dialogs;
+    gd.dia.waiting = false;
+    gd.dia.moveTo = Vector3{0,0,0};
+
     // Setup Camera
     gd.cam = Camera2D { };
     gd.cam.offset = Vector2{400, 225};
@@ -81,7 +91,7 @@ GameData Level::GenerateGameData() {
 
     // Setup other game data
     gd.level = levelFile;
-    gd.state = GameState::Running;
+    gd.state = GameState::Dialog;
     ReloadConstants();
     return gd;
 }

@@ -2,5 +2,12 @@ name = "Level 1"
 map = "bonky_kong.map"
 specials = ["player", "enemy kong", "win"]
 dialogs = [
-    "Dialog test",
+"""
+Dialog test. ||I am going to see how well I can make this work.
+This is a newline, it should show up on a new line.
+Now, lets pan up! |up 200|And now lets pan down!|down 200|
+You may begin.
+|clear|We can even clear the whole dialogue box.
+We kind of have to for longer dialogues.
+""",
 ]

@@ -13,7 +13,7 @@
 void restartLevel(GameData* d) {
     Level l (d->level);
     *d = l.GenerateGameData();
-    printf("TODO: Restarting\n");
+    d->state = GameState::Running;
 }
 
 
@@ -190,7 +190,82 @@ void handleGameOverScreen (GameData *d) {
     if (gameOverCooldown < 0 && (d->keys.a || d->keys.b)) {
         restartLevel(d);
     }
-    
+}
+
+void renderDialog(GameData* d) {
+    // Draw Rectangle
+    DrawRectangle(0, 300, 800, 150, RAYWHITE);
+    DrawRectangleLines(10, 310, 780, 130, BLACK);
+    DrawText(d->dia.msg.c_str(), 20, 320, 20, BLACK);
+}
+
+void updateDialog(GameData* d, float delta) {
+    for (Entity* e : d->entities) {
+        if (Player* p = dynamic_cast<Player*>(e)) {
+            d->cam.target = p->pos;
+            d->cam.target = Vector2Add(p->pos, d->dia.offset);
+        }
+    }
+
+    d->dia.cooldown -= delta;
+    if (d->dia.cooldown < 0) {
+        if (d->keys.a || d->keys.b) {
+            d->dia.cooldown = 0.05 / 3;
+        } else {
+            d->dia.cooldown = 0.05;
+        }
+        if (d->dia.waiting) {
+            if (d->keys.a || d->keys.b) {
+                d->dia.waiting = false;
+            } else {
+                d->dia.cooldown = -1;
+            }
+            return;    
+        }
+        for (int i = 0; i < 10; i++) {
+            if (d->dia.moveTo.y != 0) {
+                d->dia.moveTo.y -= d->dia.moveTo.z;
+                d->dia.offset.y += d->dia.moveTo.z;
+                return;
+            }
+            if (d->dia.moveTo.x != 0) {
+                d->dia.moveTo.x -= d->dia.moveTo.z;
+                d->dia.offset.x += d->dia.moveTo.z;
+                return;
+            }
+        }
+        if (d->dia.idx >= (int)d->dia.data[d->dia.current_dialog].size()) {
+            d->state = GameState::Running;
+            return;
+        }
+        if (d->dia.idx == (int)d->dia.data[d->dia.current_dialog].size() - 1) {
+            d->dia.waiting = true;
+        }
+        char c = d->dia.data[d->dia.current_dialog][d->dia.idx++];
+        if (c == '|') {
+            int idx2 = d->dia.idx;
+            while (d->dia.data[d->dia.current_dialog][idx2++] != '|');
+            string s (d->dia.data[d->dia.current_dialog], d->dia.idx, idx2 - d->dia.idx - 1);
+            d->dia.idx = idx2;
+
+            printf("Special string |%s|\n", s.c_str());
+            // handle special string
+            if (s == "") {
+                d->dia.waiting = true;
+            } else if (s.rfind("up", 0) == 0) {
+                int arg = stoi(s.substr(3));
+                d->dia.moveTo = Vector3{0, -(float)arg, -1};
+            } else if (s.rfind("down", 0) == 0) {
+                int arg = stoi(s.substr(5));
+                d->dia.moveTo = Vector3{0, (float)arg, 1};
+            } else if (s == "clear") {
+                d->dia.msg = "";
+            }
+
+        } else {
+            d->dia.msg.push_back(c);
+        }
+    }
 }
 
 // This one doesn't move with player
@@ -201,12 +276,14 @@ void drawHUD(GameData *d) {
         fancyDrawText("You Win :)", 400, 225, true);
     } else if (d->state == GameState::Paused) {
         handlePauseState(d);
+    } else if (d->state == GameState::Dialog) {
+        renderDialog(d);
     }
 }
 
 // This one does
 void draw(GameData *d) {
-    if (d->state == GameState::Running || d->state == GameState::Failed) {
+    if (d->state == GameState::Running || d->state == GameState::Failed || d->state == GameState::Dialog) {
         drawGame(d);
     }
 }
@@ -227,7 +304,8 @@ void doUpdates(GameData *d) {
             updateTime += PHYSICS_TIMESTEP;
         }
     } else if (d->state == GameState::Paused) {
-        
+    } else if (d->state == GameState::Dialog) {
+        updateDialog(d, delta); 
     }
 }
 

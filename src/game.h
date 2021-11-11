@@ -11,7 +11,7 @@ enum class PlayerState {
     Air, Sliding, Running, Standing, Climbing
 };
 enum class GameState {
-    Failed, Running, Succeeded, Paused
+    Failed, Running, Succeeded, Paused, Dialog
 };
 struct GameData;
 class Entity {
@@ -36,6 +36,17 @@ struct Keymap {
     bool select : 1;
 };
 
+struct DialogState {
+    string msg;
+    int current_dialog;
+    int idx;
+    Vector2 offset;
+    Vector3 moveTo;
+    float cooldown;
+    bool waiting;
+    vector<string> data;
+};
+
 struct GameData {
     string level;
     Map map;
@@ -44,6 +55,7 @@ struct GameData {
     vector<Texture2D> images;
     Keymap keys;
     GameState state;
+    DialogState dia;
 };
 
 GameData InitGame(Map m);

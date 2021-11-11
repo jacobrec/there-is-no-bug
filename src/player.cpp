@@ -161,7 +161,7 @@ void updatePlayer(Player* p, GameData *d, float delta) {
     if ((d->keys.right || jumped) && dv.x > eps && dv.x < 1) { dv.x = 1; }
     if ((d->keys.left || jumped) && dv.x < -eps && dv.x > -1) { dv.x = -1; }
     if (jumped && dv.y < -eps && dv.y > -1) { dv.y = -1; }
-    p->pos = Vector2Add(p->pos, dv);
+    p->pos = Vector2Add(p->pos, dv) ;
     d->cam.target = p->pos;
 }
 
