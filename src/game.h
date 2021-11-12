@@ -35,6 +35,10 @@ struct Keymap {
     bool start : 1;
     bool select : 1;
 };
+struct Keys {
+    Keymap down;
+    Keymap pressed;
+};
 
 struct DialogState {
     string msg;
@@ -49,14 +53,17 @@ struct DialogState {
 
 struct GameData {
     string level;
+    GameData* resetState;
     Map map;
     Camera2D cam;
     vector<Entity*> entities;
     vector<Texture2D> images;
-    Keymap keys;
+    Keys keys;
     GameState state;
     DialogState dia;
+    vector<string> specials;
 };
+extern GameData resetState;
 
 GameData InitGame(Map m);
 void RenderGame(GameData *d);
@@ -100,8 +107,19 @@ public:
     bool isValid() override;
 };
 
-class WinCondition : public Entity {
-public:
-    WinCondition(float x, float y);
-    void draw() override;
+enum class Effects {
+    Win, Dialog, SwitchMap
 };
+
+class EffectEntity : public Entity {
+    int triggered;
+    vector<pair<Effects, int>> effects;
+public:
+    EffectEntity(float x, float y, vector<pair<Effects, int>> data);
+    void draw() override;
+    void collidesWith(GameData* d, Entity* other) override;
+};
+
+
+void loadEntities(GameData* d, Map &m);
+void restartLevel(GameData* d);

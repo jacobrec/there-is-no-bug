@@ -158,6 +158,7 @@ void RenderEditor(EditorData *d) {
 
     d->mapChoice = GuiComboBox(Rectangle{10, 10, 150, 30}, mapChoicesString.c_str(), d->mapChoice);
     if (GuiButton(Rectangle{170, 10, 80, 30}, "Switch Map")) {
+        d->m = LoadMap(ListDirectory("assets/maps/")[d->mapChoice]);
     }
 
 

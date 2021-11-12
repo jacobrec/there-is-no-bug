@@ -60,7 +60,7 @@ void Kong::draw() {
     case 2: c = RED; break; // Beating chest frame 2
     case 3: c = BLUE; break; // Throwing
     }
-    DrawRectangle(pos.x, pos.y-size/2, size, size, c);
+    DrawRectangle(pos.x, pos.y, size, size, c);
 }
 
 

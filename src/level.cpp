@@ -5,55 +5,40 @@
 
 Level::Level(string levelFile) {
     this->levelFile = levelFile;
+    currentMap = 0;
     toml::table tbl;
     try {
         tbl = toml::parse_file(levelFile);
         this->name = tbl["name"].ref<string>();
-        this->map = tbl["map"].ref<string>();
 
-        auto loadStringVector = [&tbl] (string key, vector<string>& value) {
+        auto loadStringVector = [&tbl] (string key) {
+            vector<string> holder;
             auto tomlArr = tbl[key];
             if (toml::array* arr = tomlArr.as_array()) {
                 for (toml::node& elm : *arr) {
-                    elm.visit([&value](auto&& el) noexcept {
+                    elm.visit([&holder](auto&& el) noexcept {
                         if constexpr (toml::is_string<decltype(el)>) {
                             string s (el);
-                            value.push_back(s);
+                            holder.push_back(s);
                         }
                     });
                 }
             }
+            return holder;
         };
 
-        vector<string> mspecials;
-        vector<string> mdialogs;
-        loadStringVector("specials", mspecials);
-        loadStringVector("dialogs", mdialogs);
-        this->specials = mspecials;
-        this->dialogs = mdialogs;
-
-
+        this->specials = loadStringVector("specials");
+        this->dialogs = loadStringVector("dialogs");
+        this->maps = loadStringVector("maps");
     } catch (const toml::parse_error& err) {
         printf("Unable to parse level [%s]\n", levelFile.c_str());
     }
 }
 
 
-void handleSpecial(float x, float y, GameData* d, string special) {
-        if (special == "player") {
-            Player* p = new Player(x, y);
-            d->entities.push_back(p);
-        } else if (special == "enemy kong") {
-            Kong* k = new Kong(x, y);
-            d->entities.push_back(k);
-        } else if (special == "win") {
-            WinCondition* k = new WinCondition(x, y);
-            d->entities.push_back(k);
-        }
-}
 
 GameData Level::GenerateGameData() {
-    Map m = LoadMap(this->map);
+    Map m = LoadMap(maps[currentMap]);
     GameData gd;
     // Setup Map
     gd.map = m;
@@ -75,23 +60,19 @@ GameData Level::GenerateGameData() {
     gd.cam.zoom = 1;
     gd.cam.rotation = 0;
 
-    // Setup Specials
-    int tileCount = m.tileset.tiles.size();
-    if (m.specials != (int) specials.size()) {
-        printf("[Warning] number of specials on map is not equal to number of provided specials in level for level %s and map %s\n", name.c_str(), m.path.c_str());
-    }
-
-    for (int i = 0; i < (int)m.tiledata.size(); i++) {
-        if (m.tiledata[i] >= tileCount && m.tiledata[i] < tileCount + m.specials) {
-            float x = (i % m.width) * UNIT;
-            float y = (i / m.width) * UNIT;
-            handleSpecial(x, y, &gd, specials[m.tiledata[i] - tileCount]);
-        }
-    }
 
     // Setup other game data
     gd.level = levelFile;
     gd.state = GameState::Dialog;
+    gd.resetState = &resetState;
+
     ReloadConstants();
+
+
+    // Setup Specials
+    gd.specials = specials;
+    resetState = gd;
+    loadEntities(&gd, m);
+
     return gd;
 }

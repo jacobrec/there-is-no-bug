@@ -10,7 +10,8 @@ class Level {
 public:
     string levelFile;
     string name;
-    string map;
+    int currentMap;
+    vector<string> maps;
     vector<string> specials;
     vector<string> dialogs;
 

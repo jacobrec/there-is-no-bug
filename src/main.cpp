@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 
 
     Level l ("assets/levels/1.toml");
-    printf("Level: %s is using map %s", l.name.c_str(), l.map.c_str());
+    printf("Level: %s is using map %s\n", l.name.c_str(), l.maps[0].c_str());
 
 
     while (!WindowShouldClose()) {

@@ -10,27 +10,112 @@
 #include "util.h"
 
 
+GameData resetState;
 void restartLevel(GameData* d) {
-    Level l (d->level);
-    *d = l.GenerateGameData();
+    for ( int i = 0; i < (int)d->entities.size(); i++) {
+        delete d->entities[i];
+    }
+    d->entities.clear();
+    *d = *d->resetState;
+    loadEntities(d, d->map);
     d->state = GameState::Running;
+}
+
+void handleSpecial(float x, float y, GameData* d, string special) {
+    // Parse commands string -> vector<Cmds> == vector<vector<string>>
+    // player -> [["player"]]
+    // enemy kong -> [["enemy" "kong"]]
+    // and|dialog 1|switch_map 1 -> [["and"] ["dialog" "1"] ["switch_map" "1"]]
+
+    vector<vector<string>> cmds;
+    vector<string> v1;
+    v1.push_back("");
+    cmds.push_back(v1);
+    int idx = 0;
+    while (idx < special.size()) {
+        char c = special[idx];
+        switch (c) {
+        case ' ':
+            cmds.back().push_back("");
+            break;
+        case '|':
+            cmds.push_back(v1);
+            break;
+        default:
+            cmds.back().back().push_back(c);
+            break;
+        }
+        idx ++;
+    }
+
+
+
+    if (cmds[0][0] == "player") {
+        d->entities.push_back(new Player(x, y));
+    } else if (cmds[0][0] == "enemy") {
+        if (cmds[0][1] == "kong") {
+            d->entities.push_back(new Kong(x, y));
+        }
+    } else if (cmds[0][0] == "effects") {
+        vector<pair<Effects, int>> v;
+        for (int i = 1; i < cmds.size(); i++) {
+            if (cmds[i][0] == "win") {
+                v.push_back(make_pair(Effects::Win, 0));
+            } else if (cmds[i][0] == "dialog") {
+                v.push_back(make_pair(Effects::Dialog, stoi(cmds[i][1])));
+            } else if (cmds[i][0] == "switch_map") {
+                v.push_back(make_pair(Effects::SwitchMap, stoi(cmds[i][1])));
+            }
+        }
+        d->entities.push_back(new EffectEntity(x, y, v));
+
+    }
+}
+
+void loadEntities(GameData* d, Map &m) {
+    int tileCount = m.tileset.tiles.size();
+    if (m.specials != (int) d->specials.size()) {
+        printf("[Warning] number of specials on map(%d) is not equal to number of provided specials in map(%d) %s\n", m.specials, (int)d->specials.size(), m.path.c_str());
+    }
+
+    for (int i = 0; i < (int)m.tiledata.size(); i++) {
+        if (m.tiledata[i] >= tileCount && m.tiledata[i] < tileCount + m.specials) {
+            float x = (i % m.width) * UNIT;
+            float y = (i / m.width) * UNIT;
+            handleSpecial(x, y, d, d->specials[m.tiledata[i] - tileCount]);
+        }
+    }
 }
 
 
 void input(GameData *d) {
+#define down(X) IsKeyDown(KEY_ ## X)
+#define press(X) IsKeyPressed(KEY_ ## X)
 
-    d->keys.up     = IsKeyDown(KEY_W) || IsKeyDown(KEY_K) || IsKeyDown(KEY_UP);
-    d->keys.down   = IsKeyDown(KEY_S) || IsKeyDown(KEY_J) || IsKeyDown(KEY_DOWN);
-    d->keys.left   = IsKeyDown(KEY_A) || IsKeyDown(KEY_H) || IsKeyDown(KEY_LEFT);
-    d->keys.right  = IsKeyDown(KEY_D) || IsKeyDown(KEY_L) || IsKeyDown(KEY_RIGHT);
-    d->keys.a      = IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_BUTTON_LEFT);
-    d->keys.b      = IsKeyDown(KEY_LEFT_SHIFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-    d->keys.start  = IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_Q);
-    d->keys.select = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_E);
+    d->keys.down.up     = down(W) || down(K) || down(UP);
+    d->keys.down.down   = down(S) || down(J) || down(DOWN);
+    d->keys.down.left   = down(A) || down(H) || down(LEFT);
+    d->keys.down.right  = down(D) || down(L) || down(RIGHT);
+    d->keys.down.a      = down(SPACE) || IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    d->keys.down.b      = down(LEFT_SHIFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+    d->keys.down.start  = down(ESCAPE) || down(Q);
+    d->keys.down.select = down(ENTER) || down(E);
+
+    d->keys.pressed.up     = press(W) || press(K) || press(UP);
+    d->keys.pressed.down   = press(S) || press(J) || press(DOWN);
+    d->keys.pressed.left   = press(A) || press(H) || press(LEFT);
+    d->keys.pressed.right  = press(D) || press(L) || press(RIGHT);
+    d->keys.pressed.a      = press(SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    d->keys.pressed.b      = press(LEFT_SHIFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+    d->keys.pressed.start  = press(ESCAPE) || press(Q);
+    d->keys.pressed.select = press(ENTER) || press(E);
 
     if (DEBUG) {
         if (IsKeyPressed(KEY_R)) {
             ReloadConstants();
+        }
+        if (IsKeyPressed(KEY_P)) {
+            SetScreen(SCREEN_EDITOR);
         }
     }
 
@@ -39,8 +124,7 @@ void input(GameData *d) {
 
 
 void update(GameData *d, float delta) {
-    if (d->keys.start) {SetScreen(SCREEN_EDITOR);}
-    if (d->keys.select) {d->state = GameState::Paused;}
+    if (d->keys.pressed.select) {d->state = GameState::Paused;}
 
     set<pair<Entity*, Entity*>> collisions;
     int size = d->entities.size();
@@ -144,24 +228,24 @@ void handlePauseState(GameData* d) {
     float delta = GetTime() - lastTime;
     lastTime += delta;
     pauseStateShiftCooldown -= delta;
-    if (pauseStateShiftCooldown < 0 && (d->keys.up || d->keys.down)) {
-        if (d->keys.up) {
+    if (pauseStateShiftCooldown < 0 && (d->keys.down.up || d->keys.down.down)) {
+        if (d->keys.down.up) {
             pauseState--;
             if (pauseState < 0) {pauseState = 0;}
-        } else if (d->keys.down) {
+        } else if (d->keys.down.down) {
             pauseState++;
             if (pauseState > 3) {pauseState = 3;}
         }
         pauseStateShiftCooldown = 0.2;
     }
 
-    if (d->keys.a) {
+    if (d->keys.pressed.a) {
         switch (pauseState) {
         case 0: // Continue
             d->state = GameState::Running;
             break;
         case 1: // Restart
-
+            restartLevel(d);
             break;
         case 2: // Title Screen
             break;
@@ -170,7 +254,7 @@ void handlePauseState(GameData* d) {
         }
 
         pauseState = 0;
-    } else if (d->keys.b) {
+    } else if (d->keys.pressed.b) {
         d->state = GameState::Running;
         pauseState = 0;
     }
@@ -187,7 +271,7 @@ void handleGameOverScreen (GameData *d) {
         gameOverCooldown = 0.4;
     }
     fancyDrawText("You Died :(", 400, 225, true);
-    if (gameOverCooldown < 0 && (d->keys.a || d->keys.b)) {
+    if (gameOverCooldown < 0 && (d->keys.pressed.a || d->keys.pressed.b)) {
         restartLevel(d);
     }
 }
@@ -209,30 +293,30 @@ void updateDialog(GameData* d, float delta) {
 
     d->dia.cooldown -= delta;
     if (d->dia.cooldown < 0) {
-        if (d->keys.a || d->keys.b) {
+        if (d->keys.pressed.start) {
+            d->state = GameState::Running;
+        } else if (d->keys.down.a || d->keys.down.b) {
             d->dia.cooldown = 0.05 / 3;
         } else {
             d->dia.cooldown = 0.05;
         }
         if (d->dia.waiting) {
-            if (d->keys.a || d->keys.b) {
+            if (d->keys.down.a || d->keys.down.b) {
                 d->dia.waiting = false;
             } else {
                 d->dia.cooldown = -1;
             }
             return;    
         }
-        for (int i = 0; i < 10; i++) {
-            if (d->dia.moveTo.y != 0) {
-                d->dia.moveTo.y -= d->dia.moveTo.z;
-                d->dia.offset.y += d->dia.moveTo.z;
-                return;
-            }
-            if (d->dia.moveTo.x != 0) {
-                d->dia.moveTo.x -= d->dia.moveTo.z;
-                d->dia.offset.x += d->dia.moveTo.z;
-                return;
-            }
+        if (d->dia.moveTo.y != 0) {
+            d->dia.moveTo.y -= d->dia.moveTo.z;
+            d->dia.offset.y += d->dia.moveTo.z * UNIT;
+            return;
+        }
+        if (d->dia.moveTo.x != 0) {
+            d->dia.moveTo.x -= d->dia.moveTo.z;
+            d->dia.offset.x += d->dia.moveTo.z * UNIT;
+            return;
         }
         if (d->dia.idx >= (int)d->dia.data[d->dia.current_dialog].size()) {
             d->state = GameState::Running;
@@ -299,7 +383,7 @@ void doUpdates(GameData *d) {
 
     if (d->state == GameState::Running) {
         float updateTime = 0;
-        while (updateTime < delta) {
+        while (d->state == GameState::Running && updateTime < delta) {
             update(d, PHYSICS_TIMESTEP);
             updateTime += PHYSICS_TIMESTEP;
         }

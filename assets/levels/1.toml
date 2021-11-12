@@ -1,13 +1,24 @@
 name = "Level 1"
-map = "bonky_kong.map"
-specials = ["player", "enemy kong", "win"]
+maps = ["bonky_kong.map", "bonky_kong_2.map"]
+specials = ["player", "enemy kong", "effects|dialog 1|switch_map 1", "dialog 2", "effects|dialog 3|win"]
 dialogs = [
 """
-Dialog test. ||I am going to see how well I can make this work.
-This is a newline, it should show up on a new line.
-Now, lets pan up! |up 200|And now lets pan down!|down 200|
-You may begin.
-|clear|We can even clear the whole dialogue box.
-We kind of have to for longer dialogues.
+I must get my precious, precious garbage back!
+|clear||up 18|Hahahahaha, all your trash is mine!
+I shall be the one to root through it!|down 18|
+|clear|Press D to move right, and A to move left.
+Left click is jump, and right click is sprint.
 """,
+"""
+I am BUG! Master of the domain! Why have you awaken me?!?!?!?!||
+Not that it matters, you shall be punished! Hmm, what to do||.||.||.||
+I know, that trash of yours, it is now mine.||
+Now!|| Begone!!
+""",
+"""
+Wait,|| this feels familiar.|| What happened?
+""",
+"""
+What?|| NOooOOOoOOoooOOo!!!!|| How did you rescue your garbage from me!
+"""
 ]

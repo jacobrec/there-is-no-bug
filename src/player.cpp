@@ -22,16 +22,16 @@ void Player::draw() {
 }
 
 void updatePlayer(Player* p, GameData *d, float delta) {
-    auto effective_max_velocity = d->keys.b ? SPRINT_SPEED_MODIFIER * MAX_VELOCITY : MAX_VELOCITY;
-    auto effective_accel = d->keys.b ? SPRINT_ACCEL_MODIFIER * ACCEL : ACCEL;
+    auto effective_max_velocity = d->keys.down.b ? SPRINT_SPEED_MODIFIER * MAX_VELOCITY : MAX_VELOCITY;
+    auto effective_accel = d->keys.down.b ? SPRINT_ACCEL_MODIFIER * ACCEL : ACCEL;
     if (p->state == PlayerState::Climbing) {
     } else {
         p->state = PlayerState::Standing;
-        if (d->keys.left && !d->keys.right) {
+        if (d->keys.down.left && !d->keys.down.right) {
             p->vel.x -= effective_accel * delta;
             p->vel.x = max(p->vel.x, -effective_max_velocity);
             p->state = PlayerState::Running;
-        } else if (d->keys.right && !d->keys.left) {
+        } else if (d->keys.down.right && !d->keys.down.left) {
             p->vel.x += effective_accel * delta;
             p->vel.x = min(p->vel.x, effective_max_velocity);
             p->state = PlayerState::Running;
@@ -60,17 +60,23 @@ void updatePlayer(Player* p, GameData *d, float delta) {
                         climbing = CheckCollisionRecs(pr, tile);
                     } else {
                         if (CheckCollisionRecs(pr, tile)) {
-                            if (d->keys.up || d->keys.down)
+                            if (d->keys.down.up || d->keys.down.down)
                             climbing = true;
                         }
                     }
                 } else if (d->map.collisiondata[idx] == COL_ONE_WAY) {
                     auto pb = Rectangle{px+inset/2, py + ps - tiny_colmask, ps-inset, tiny_colmask};
                     auto onewaytile = Rectangle{xt*UNIT, yt*UNIT, UNIT, UNIT/5};
-                    if (p->vel.y > 0 && CheckCollisionRecs(pb, onewaytile)) { // Collision Bottom
+                    if (p->vel.y > 0 && CheckCollisionRecs(pb, onewaytile)) {
                         p->pos.y = yt * UNIT - ps + 1;
                         p->vel.y = 0;
                         grounded = true;
+                    }
+                } else if (d->map.collisiondata[idx] == COL_DEAD) {
+                    auto pb = Rectangle{px, py, ps, ps};
+                    auto tile = Rectangle{xt*UNIT, yt*UNIT, UNIT, UNIT};
+                    if (p->vel.y > 0 && CheckCollisionRecs(pb, tile)) {
+                        d->state = GameState::Failed;
                     }
                 } else if (d->map.collisiondata[idx] == COL_SOLID) {
                     auto pb = Rectangle{px+inset/2, py + ps - colmask, ps-inset, colmask};
@@ -110,7 +116,7 @@ void updatePlayer(Player* p, GameData *d, float delta) {
     if (climbing) {
         p->state = PlayerState::Climbing;
     }
-    if (p->state == PlayerState::Climbing && (!climbing || d->keys.b)) {
+    if (p->state == PlayerState::Climbing && (!climbing || d->keys.pressed.b)) {
         p->state = PlayerState::Air;
     }
 
@@ -119,7 +125,7 @@ void updatePlayer(Player* p, GameData *d, float delta) {
     }
 
     bool jumped = false;
-    if (d->keys.a) {
+    if (d->keys.pressed.a) {
         if (p->state == PlayerState::Climbing) {
             p->vel.y = JUMP_VELOCITY;
             jumped = true;
@@ -129,8 +135,6 @@ void updatePlayer(Player* p, GameData *d, float delta) {
             p->vel.y = JUMP_VELOCITY;
             jumped = true;
             p->lastJumped = GetTime();
-        } else if (GetTime() - p->lastJumped < JUMP_EXTENSION_TIME) {
-            p->vel.y = JUMP_VELOCITY;
         } else if (walled && GetTime() - p->lastJumped > JUMP_COOLDOWN) {
             if (p->lastWalljumped != walled) {
                 p->vel.y = JUMP_VELOCITY;
@@ -141,6 +145,11 @@ void updatePlayer(Player* p, GameData *d, float delta) {
             }
         }
     }
+    if (d->keys.down.a) {
+        if (GetTime() - p->lastJumped < JUMP_EXTENSION_TIME) {
+            p->vel.y = JUMP_VELOCITY;
+        }
+    }
 
     if (p->state == PlayerState::Standing) {
         p->vel = Vector2Scale(p->vel, FRICTION_FACTOR);
@@ -149,17 +158,17 @@ void updatePlayer(Player* p, GameData *d, float delta) {
     } else if (p->state == PlayerState::Climbing) {
         p->vel.x = 0;
         p->vel.y = 0;
-        if (d->keys.left) p->vel.x -= CLIMB_SPEED;
-        if (d->keys.right) p->vel.x += CLIMB_SPEED;
-        if (d->keys.up) p->vel.y -= CLIMB_SPEED;
-        if (d->keys.down) p->vel.y += CLIMB_SPEED;
+        if (d->keys.down.left) p->vel.x -= CLIMB_SPEED;
+        if (d->keys.down.right) p->vel.x += CLIMB_SPEED;
+        if (d->keys.down.up) p->vel.y -= CLIMB_SPEED;
+        if (d->keys.down.down) p->vel.y += CLIMB_SPEED;
     }
 
     // printf("Pos (%f,%f). Vel(%f,%f) Delta(%f, %f)\n", p->pos.x, d->player.pos.y, d->player.vel.x, d->player.vel.y, d->player.vel.x * delta, d->player.vel.y * delta);
     auto dv = Vector2Scale(p->vel, delta);
     float eps = 0.1;
-    if ((d->keys.right || jumped) && dv.x > eps && dv.x < 1) { dv.x = 1; }
-    if ((d->keys.left || jumped) && dv.x < -eps && dv.x > -1) { dv.x = -1; }
+    if ((d->keys.down.right || jumped) && dv.x > eps && dv.x < 1) { dv.x = 1; }
+    if ((d->keys.down.left || jumped) && dv.x < -eps && dv.x > -1) { dv.x = -1; }
     if (jumped && dv.y < -eps && dv.y > -1) { dv.y = -1; }
     p->pos = Vector2Add(p->pos, dv) ;
     d->cam.target = p->pos;
@@ -173,17 +182,8 @@ void Player::update(GameData *d, float delta) {
 void Player::collidesWith(GameData *data, Entity* other) {
     if (KongBarrel* p = dynamic_cast<KongBarrel*>(other)) {
         data->state = GameState::Failed;
-    } else if (WinCondition* p = dynamic_cast<WinCondition*>(other)) {
-        data->state = GameState::Succeeded;
+    } else if (Kong* p = dynamic_cast<Kong*>(other)) {
+        data->state = GameState::Failed;
     }
 }
 
-
-WinCondition::WinCondition(float x, float y) {
-    pos = Vector2{x, y};
-    size = UNIT;
-}
-
-void WinCondition::draw() {
-    DrawRectangle(this->pos.x, this->pos.y, UNIT, UNIT, ColorAlpha(WHITE, 0.5));
-}
