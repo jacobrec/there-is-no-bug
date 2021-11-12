@@ -78,6 +78,7 @@ public:
     Vector2 vel;
     PlayerState state;
     float lastJumped;
+    float lastWallJumped;
     int lastWalljumped;
     void update(GameData* d, float delta) override;
     void draw() override;

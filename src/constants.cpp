@@ -14,6 +14,7 @@ float GRAVITY;
 float SPRINT_SPEED_MODIFIER;
 float SPRINT_ACCEL_MODIFIER;
 float JUMP_COOLDOWN;
+float WALLJUMP_MOVEMENT_COOLDOWN;
 float JUMP_EXTENSION_TIME;
 float CLIMB_SPEED;
 
@@ -160,6 +161,7 @@ map<string, float> ConfigParser::parseFile() {
 void ReloadConstants() {
     auto cp = ConfigParser(PHYSICS_CONFIG_PATH);
     auto cmap = cp.parseFile();
+#define reload(X) X = cmap[#X];
     ACCEL = cmap["ACCEL"];
     MAX_VELOCITY = cmap["MAX_VELOCITY"];
     JUMP_VELOCITY = cmap["JUMP_VELOCITY"];
@@ -172,6 +174,7 @@ void ReloadConstants() {
     JUMP_EXTENSION_TIME = cmap["JUMP_EXTENSION_TIME"];
     CLIMB_SPEED = cmap["CLIMB_SPEED"];
     WALLJUMP_VELOCITY = cmap["WALLJUMP_VELOCITY"];
+    WALLJUMP_MOVEMENT_COOLDOWN = cmap["WALLJUMP_MOVEMENT_COOLDOWN"];
 }
 
 

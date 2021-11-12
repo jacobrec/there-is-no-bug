@@ -10,8 +10,7 @@ EffectEntity::EffectEntity(float x, float y, vector<pair<Effects, int>> data) {
 }
 
 void EffectEntity::draw() {
-    // DrawRectangle(this->pos.x, this->pos.y, UNIT, UNIT, ColorAlpha(WHITE, 0.5));
-    DrawRectangle(this->pos.x, this->pos.y, UNIT, UNIT, ColorAlpha(MAROON, 0.5));
+    DrawRectangle(this->pos.x, this->pos.y, UNIT, UNIT, ColorAlpha(WHITE, 0.5));
 }
 
 void EffectEntity::collidesWith(GameData *data, Entity* other) {

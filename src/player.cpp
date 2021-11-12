@@ -9,6 +9,7 @@ Player::Player(float x, float y) {
     size = UNIT;
     state = PlayerState::Standing;
     lastJumped = GetTime();
+    lastWallJumped = GetTime();
     lastWalljumped = 0;
 }
 
@@ -22,19 +23,22 @@ void Player::draw() {
 }
 
 void updatePlayer(Player* p, GameData *d, float delta) {
+    auto movementDisabled = GetTime() - p->lastWallJumped < WALLJUMP_MOVEMENT_COOLDOWN;
     auto effective_max_velocity = d->keys.down.b ? SPRINT_SPEED_MODIFIER * MAX_VELOCITY : MAX_VELOCITY;
     auto effective_accel = d->keys.down.b ? SPRINT_ACCEL_MODIFIER * ACCEL : ACCEL;
     if (p->state == PlayerState::Climbing) {
     } else {
         p->state = PlayerState::Standing;
-        if (d->keys.down.left && !d->keys.down.right) {
-            p->vel.x -= effective_accel * delta;
-            p->vel.x = max(p->vel.x, -effective_max_velocity);
-            p->state = PlayerState::Running;
-        } else if (d->keys.down.right && !d->keys.down.left) {
-            p->vel.x += effective_accel * delta;
-            p->vel.x = min(p->vel.x, effective_max_velocity);
-            p->state = PlayerState::Running;
+        if (!movementDisabled) {
+            if (d->keys.down.left && !d->keys.down.right) {
+                p->vel.x -= effective_accel * delta;
+                p->vel.x = max(p->vel.x, -effective_max_velocity);
+                p->state = PlayerState::Running;
+            } else if (d->keys.down.right && !d->keys.down.left) {
+                p->vel.x += effective_accel * delta;
+                p->vel.x = min(p->vel.x, effective_max_velocity);
+                p->state = PlayerState::Running;
+            }
         }
     }
 
@@ -141,6 +145,7 @@ void updatePlayer(Player* p, GameData *d, float delta) {
                 p->vel.x = - walled * WALLJUMP_VELOCITY;
                 jumped = true;
                 p->lastJumped = GetTime();
+                p->lastWallJumped = p->lastJumped;
                 p->lastWalljumped = walled;
             }
         }

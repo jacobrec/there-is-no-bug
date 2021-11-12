@@ -22,6 +22,7 @@ extern float SPRINT_ACCEL_MODIFIER;
 extern float JUMP_COOLDOWN;
 extern float JUMP_EXTENSION_TIME;
 extern float CLIMB_SPEED;
+extern float WALLJUMP_MOVEMENT_COOLDOWN;
 
 const string PHYSICS_CONFIG_PATH = "assets/data/physics_constants.txt";
 
