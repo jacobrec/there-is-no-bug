@@ -11,6 +11,7 @@ Animation::Animation(string aniPath) {
     toml::table tbl;
     try {
         tbl = toml::parse_file(aniPath + "/animation.toml");
+        this->width = tbl["width"].ref<double>();
         auto loadIntVector = [] (toml::table tbl, string key) {
             vector<int> holder;
             auto tomlArr = tbl[key];
@@ -33,6 +34,7 @@ Animation::Animation(string aniPath) {
     } catch (const toml::parse_error& err) {
         printf("Unable to parse animation.toml [%s]\n", aniPath.c_str());
         frameLengths = vector<float>(1, 1.0f);
+        this->width = 1.0f;
     }
 
     auto vs = ListDirectory(aniPath);
@@ -46,8 +48,8 @@ Animation::Animation(string aniPath) {
     for (int i = 0; i < frameLengths.size(); i++) {
         totalTime += frameLengths[i];
     }
-
 }
+
 Texture2D Animation::getFrame() {
     float t = fmod(GetTime(), totalTime);
     float sum = 0;
@@ -80,19 +82,21 @@ Player::Player(float x, float y) {
 
 void Player::draw() {
     Texture2D t;
+    Animation a = anis[pANI_STANDING];
     switch (this->state) {
-    case PlayerState::Air: t = anis[pANI_FALLING].getFrame(); break;
-    case PlayerState::Climbing: t = anis[pANI_CLIMBING].getFrame(); break;
-    case PlayerState::Running: t = anis[pANI_WALKING].getFrame(); break;
-    case PlayerState::Sliding: t = anis[pANI_SLIDING].getFrame(); break;
-    case PlayerState::Standing: t = anis[pANI_STANDING].getFrame(); break;
+    case PlayerState::Air: a = anis[pANI_FALLING]; break;
+    case PlayerState::Climbing: a = anis[pANI_CLIMBING]; break;
+    case PlayerState::Running: a = anis[pANI_WALKING]; break;
+    case PlayerState::Sliding: a = anis[pANI_SLIDING]; break;
+    case PlayerState::Standing: a = anis[pANI_STANDING]; break;
     }
     float scale = size / (float)t.width;
+    t = a.getFrame();
     function<int(int)> jabs = [](int i) {
         return i < 0 ? i * -1 : i;
     };
-    float size = UNIT;
-    DrawTexturePro(t, Rectangle{0,0,t.width * (isLeft ? -1 : 1),t.height}, Rectangle{pos.x,pos.y,size, size}, Vector2{0,0}, 0, WHITE);
+    float size = UNIT * a.getWidth();
+    DrawTexturePro(t, Rectangle{0,0,t.width * (isLeft ? -1 : 1),t.height}, Rectangle{pos.x,pos.y,size,size*t.height/t.width}, Vector2{0,0}, 0, WHITE);
 }
 
 void updatePlayer(Player* p, GameData *d, float delta) {

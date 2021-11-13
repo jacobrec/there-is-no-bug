@@ -10,7 +10,6 @@ Level::Level(string levelFile) {
     try {
         tbl = toml::parse_file(levelFile);
         this->name = tbl["name"].ref<string>();
-
         auto loadStringVector = [&tbl] (string key) {
             vector<string> holder;
             auto tomlArr = tbl[key];

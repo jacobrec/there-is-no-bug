@@ -72,9 +72,11 @@ class Animation {
     vector<Texture2D> frames;
     vector<float> frameLengths;
     double totalTime;
+    double width;
 public:
     Animation(string aniPath);
     Texture2D getFrame();
+    double getWidth() const { return width; };
 };
 //////////////
 // Entities //
