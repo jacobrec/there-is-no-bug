@@ -1,7 +1,65 @@
+#include <functional>
 #include <raylib.h>
 #include <raymath.h>
 #include "game.h"
+#include "util.h"
 #include "constants.h"
+#include "extras/toml.hpp"
+
+
+Animation::Animation(string aniPath) {
+    toml::table tbl;
+    try {
+        tbl = toml::parse_file(aniPath + "/animation.toml");
+        auto loadIntVector = [] (toml::table tbl, string key) {
+            vector<int> holder;
+            auto tomlArr = tbl[key];
+            if (toml::array* arr = tomlArr.as_array()) {
+                for (toml::node& elm : *arr) {
+                    elm.visit([&holder](auto&& el) noexcept {
+                        if constexpr (toml::is_integer<decltype(el)>) {
+                            long int s (el);
+                            holder.push_back(s);
+                        }
+                    });
+                }
+            }
+            return holder;
+        };
+        vector<int> frameLenghtInts= loadIntVector(tbl, "frame_lengths");
+        for (int i = 0; i < frameLenghtInts.size(); i++) {
+            frameLengths.push_back(frameLenghtInts[i] / 1000.0f);
+        }
+    } catch (const toml::parse_error& err) {
+        printf("Unable to parse animation.toml [%s]\n", aniPath.c_str());
+        frameLengths = vector<float>(1, 1.0f);
+    }
+
+    auto vs = ListDirectory(aniPath);
+    for (int i = 0; i < vs.size(); i++) {
+        if (vs[i] != "animation.toml") {
+            frames.push_back(LoadTexture((aniPath + "/" + vs[i]).c_str()));
+        }
+    }
+
+    totalTime = 0;
+    for (int i = 0; i < frameLengths.size(); i++) {
+        totalTime += frameLengths[i];
+    }
+
+}
+Texture2D Animation::getFrame() {
+    float t = fmod(GetTime(), totalTime);
+    float sum = 0;
+    for (int i = 0; i < frameLengths.size(); i++) {
+        sum += frameLengths[i];
+        if (t < sum) {
+            return frames[i];
+        }
+    }
+    Texture2D aaahh;
+    return aaahh;
+}
 
 Player::Player(float x, float y) {
     pos = Vector2{x, y};
@@ -11,15 +69,30 @@ Player::Player(float x, float y) {
     lastJumped = GetTime();
     lastWallJumped = GetTime();
     lastWalljumped = 0;
+    isLeft = true;
+    
+    anis.push_back(Animation("assets/art/player/standing")); // pANI_STANDING,
+    anis.push_back(Animation("assets/art/player/jumping")); // pANI_FALLING,
+    anis.push_back(Animation("assets/art/player/standing")); // pANI_CLIMBING,
+    anis.push_back(Animation("assets/art/player/walking")); // pANI_WALKING,
+    anis.push_back(Animation("assets/art/player/sliding")); // pANI_SLIDING,
 }
 
 void Player::draw() {
-    Color c = BLUE;
-    if (this->state == PlayerState::Running) {c = YELLOW;}
-    if (this->state == PlayerState::Air) {c = ORANGE;}
-    if (this->state == PlayerState::Sliding) {c = RED;}
-    if (this->state == PlayerState::Standing) {c = BEIGE;}
-    DrawRectangle(this->pos.x, this->pos.y, UNIT, UNIT, c);
+    Texture2D t;
+    switch (this->state) {
+    case PlayerState::Air: t = anis[pANI_FALLING].getFrame(); break;
+    case PlayerState::Climbing: t = anis[pANI_CLIMBING].getFrame(); break;
+    case PlayerState::Running: t = anis[pANI_WALKING].getFrame(); break;
+    case PlayerState::Sliding: t = anis[pANI_SLIDING].getFrame(); break;
+    case PlayerState::Standing: t = anis[pANI_STANDING].getFrame(); break;
+    }
+    float scale = size / (float)t.width;
+    function<int(int)> jabs = [](int i) {
+        return i < 0 ? i * -1 : i;
+    };
+    float size = UNIT;
+    DrawTexturePro(t, Rectangle{0,0,t.width * (isLeft ? -1 : 1),t.height}, Rectangle{pos.x,pos.y,size, size}, Vector2{0,0}, 0, WHITE);
 }
 
 void updatePlayer(Player* p, GameData *d, float delta) {
@@ -31,10 +104,12 @@ void updatePlayer(Player* p, GameData *d, float delta) {
         p->state = PlayerState::Standing;
         if (!movementDisabled) {
             if (d->keys.down.left && !d->keys.down.right) {
+                p->isLeft = true;
                 p->vel.x -= effective_accel * delta;
                 p->vel.x = max(p->vel.x, -effective_max_velocity);
                 p->state = PlayerState::Running;
             } else if (d->keys.down.right && !d->keys.down.left) {
+                p->isLeft = false;
                 p->vel.x += effective_accel * delta;
                 p->vel.x = min(p->vel.x, effective_max_velocity);
                 p->state = PlayerState::Running;
@@ -147,6 +222,7 @@ void updatePlayer(Player* p, GameData *d, float delta) {
                 p->lastJumped = GetTime();
                 p->lastWallJumped = p->lastJumped;
                 p->lastWalljumped = walled;
+                p->isLeft = walled > 0;
             }
         }
     }

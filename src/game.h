@@ -68,18 +68,36 @@ extern GameData resetState;
 GameData InitGame(Map m);
 void RenderGame(GameData *d);
 
+class Animation {
+    vector<Texture2D> frames;
+    vector<float> frameLengths;
+    double totalTime;
+public:
+    Animation(string aniPath);
+    Texture2D getFrame();
+};
 //////////////
 // Entities //
 //////////////
 
+enum PlayerAnimationIndexes {
+    pANI_STANDING,
+    pANI_FALLING,
+    pANI_CLIMBING,
+    pANI_WALKING,
+    pANI_SLIDING,
+};
 class Player : public Entity {
 public:
     Player(float x, float y);
     Vector2 vel;
     PlayerState state;
     float lastJumped;
-    float lastWallJumped;
-    int lastWalljumped;
+    // TODO: rename on of these two variables
+    float lastWallJumped; // this is the number of seconds since you last walljumped
+    int lastWalljumped; // this is the direction of the last wall jumped
+    bool isLeft;
+    vector<Animation> anis;
     void update(GameData* d, float delta) override;
     void draw() override;
     void collidesWith(GameData* d, Entity* other) override;
