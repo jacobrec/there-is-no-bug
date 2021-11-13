@@ -7,7 +7,7 @@ CC := g++
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-CPPFLAGS ?= $(INC_FLAGS) -MMD -g
+CPPFLAGS ?= $(INC_FLAGS) -MMD -g -std=c++17
 DEPS := $(OBJS:.o=.d)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
