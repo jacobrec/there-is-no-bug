@@ -121,6 +121,11 @@ void input(GameData *d) {
 
 }
 
+bool doesCollide(Entity* e, Entity* o) {
+    Rectangle re = Rectangle{e->pos.x, e->pos.y, e->size, e->size};
+    Rectangle ro = Rectangle{o->pos.x, o->pos.y, o->size, o->size};
+    return CheckCollisionRecs(re, ro);
+}
 
 
 void update(GameData *d, float delta) {
@@ -133,11 +138,9 @@ void update(GameData *d, float delta) {
         e->update(d, delta);
 
         // If we ever have lots of entities, something more effecient will need to be done. BSP?
-        Rectangle re = Rectangle{e->pos.x, e->pos.y, e->size, e->size};
         for (int j = 0; j < size; j++) {
             Entity* o = d->entities[j];
-            Rectangle ro = Rectangle{o->pos.x, o->pos.y, o->size, o->size};
-            if (CheckCollisionRecs(re, ro)) {
+            if (doesCollide(e, o)) {
                 if (o != e) {
                     if (o < e) {
                         collisions.insert(pair<Entity*, Entity*>(o, e));
@@ -306,7 +309,7 @@ void updateDialog(GameData* d, float delta) {
             } else {
                 d->dia.cooldown = -1;
             }
-            return;    
+            return;
         }
         if (d->dia.moveTo.y != 0) {
             d->dia.moveTo.y -= d->dia.moveTo.z;
@@ -389,7 +392,7 @@ void doUpdates(GameData *d) {
         }
     } else if (d->state == GameState::Paused) {
     } else if (d->state == GameState::Dialog) {
-        updateDialog(d, delta); 
+        updateDialog(d, delta);
     }
 }
 
