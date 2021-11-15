@@ -10,6 +10,11 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 CPPFLAGS ?= $(INC_FLAGS) -MMD -g -std=c++17
 DEPS := $(OBJS:.o=.d)
 
+ifeq ($(OS),Windows_NT)
+    CPPFLAGS += -I C:\raylib\raylib\src
+    LIBS := -L C:\raylib\raylib\src -lraylib -lopengl32 -lgdi32 -lwinmm -DPLATFORM_DESKTOP
+endif
+
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CC) $(OBJS) $(LIBS) -o $@ $(LDFLAGS)
 

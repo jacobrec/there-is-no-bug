@@ -19,7 +19,7 @@ Animation::Animation(string aniPath) {
                 for (toml::node& elm : *arr) {
                     elm.visit([&holder](auto&& el) noexcept {
                         if constexpr (toml::is_integer<decltype(el)>) {
-                            long int s (el);
+                            int64_t s (el);
                             holder.push_back(s);
                         }
                     });
