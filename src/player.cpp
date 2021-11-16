@@ -77,6 +77,7 @@ Player::Player(float x, float y) {
     anis.push_back(Animation("assets/art/player/jumping")); // pANI_FALLING,
     anis.push_back(Animation("assets/art/player/standing")); // pANI_CLIMBING,
     anis.push_back(Animation("assets/art/player/walking")); // pANI_WALKING,
+    anis.push_back(Animation("assets/art/player/running")); // pANI_RUNNING,
     anis.push_back(Animation("assets/art/player/sliding")); // pANI_SLIDING,
 }
 
@@ -86,7 +87,13 @@ void Player::draw() {
     switch (this->state) {
     case PlayerState::Air: a = anis[pANI_FALLING]; break;
     case PlayerState::Climbing: a = anis[pANI_CLIMBING]; break;
-    case PlayerState::Running: a = anis[pANI_WALKING]; break;
+    case PlayerState::Running:
+        if (abs(this->vel.x) > MAX_VELOCITY) {
+            a = anis[pANI_RUNNING];
+        } else {
+            a = anis[pANI_WALKING];
+        }
+        break;
     case PlayerState::Sliding: a = anis[pANI_SLIDING]; break;
     case PlayerState::Standing: a = anis[pANI_STANDING]; break;
     }
