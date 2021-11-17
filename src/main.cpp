@@ -8,7 +8,7 @@
 
 
 #include "level.h"
-#include "editor.h"
+#include "tools/map_editor/editor.h"
 #include "game.h"
 #include "util.h"
 

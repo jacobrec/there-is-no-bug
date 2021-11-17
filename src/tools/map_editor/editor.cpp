@@ -8,7 +8,7 @@
 #include "extras/raygui.h"
 
 #include "map.h"
-#include "editor.h"
+#include "tools/map_editor/editor.h"
 #include "util.h"
 
 void save(EditorData* d) {
@@ -22,7 +22,7 @@ EditorData InitEditor(int level) {
     if (ListDirectory("assets/maps/").size() == 0) {
         printf("No maps found. Unable to load editor. Please create a map file: $ touch assets/maps/mapname.map");
     }
-    
+
     Level l ("assets/levels/" + to_string(level) + ".toml");
     Map m = LoadMap(ListDirectory("assets/maps/")[0]);
     EditorData ed = EditorData {
@@ -51,7 +51,7 @@ void RenderEditor(EditorData *d) {
     static bool tilesetDropped = false;
     auto tilesetChoicesString = Join(d->tilesetChoices, string(";"));
     auto mapChoicesString = Join(ListDirectory("assets/maps/"), string(";"));
-    
+
     ClearBackground(RAYWHITE);
 
     float tilescale = d->images[0].width * 5 / 8;
