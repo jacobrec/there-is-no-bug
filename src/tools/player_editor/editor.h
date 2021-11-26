@@ -12,9 +12,10 @@ struct PEditorData {
     string dir;
     toml::table tbl;
     vector<Texture2D> frames;
-    vector<float> frameLength;
+    vector<double> frameLength;
     float aWidth;
     float aHeight;
+    vector<Rectangle> hitboxes;
 };
 
 PEditorData InitPEditor(string dir);
