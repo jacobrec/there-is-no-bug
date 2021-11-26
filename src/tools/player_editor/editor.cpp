@@ -3,6 +3,7 @@
 #include <iterator>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <raylib.h>
 
 #include "extras/raygui.h"
@@ -25,7 +26,11 @@ void save(PEditorData* d) {
        { "hitboxes", hitboxes },
        { "frame_lengths", frame_lengths },
    }};
-   std::cout << tbl << "\n";
+   
+   ofstream myfile;
+   myfile.open(d->dir + "/animation.toml");
+   myfile << tbl << "\n";
+   myfile.close();
 
 }
 
@@ -88,6 +93,19 @@ PEditorData InitPEditor(string dir) {
 }
 
 
+Rectangle fixRect(Rectangle r) {
+    if (r.width < 0) {
+        r.width = -r.width;
+        r.x -= r.width;
+    }
+
+    if (r.height < 0) {
+        r.height = -r.height;
+        r.y -= r.height;
+    }
+    return r;
+}
+
 int NO_MODE = 0;
 int ADD_MODE = 1;
 int REMOVE_MODE = 2;
@@ -127,8 +145,8 @@ void RenderPEditor(PEditorData *d) {
     Vector2 m = GetMousePosition();
     if (mode == ADD_MODE) {
         if (!(addModeDown.x == -1 && addModeDown.y == -1)) {
-            DrawRectangleRec(Rectangle{addModeDown.x, addModeDown.y,
-                    m.x - addModeDown.x, m.y - addModeDown.y},
+            DrawRectangleRec(fixRect(Rectangle{addModeDown.x, addModeDown.y,
+                        m.x - addModeDown.x, m.y - addModeDown.y}),
                 ColorAlpha(BLACK, 0.4));
 
         }
@@ -142,7 +160,7 @@ void RenderPEditor(PEditorData *d) {
             } else {
                 Rectangle r = Rectangle{addModeDown.x, addModeDown.y,
                     m.x - addModeDown.x, m.y - addModeDown.y};
-                d->hitboxes.push_back(r);
+                d->hitboxes.push_back(fixRect(r));
                 mode = NO_MODE;
                 addModeDown = Vector2{-1,-1};
             }
