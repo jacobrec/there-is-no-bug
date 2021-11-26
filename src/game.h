@@ -87,6 +87,7 @@ enum PlayerAnimationIndexes {
     pANI_FALLING,
     pANI_CLIMBING,
     pANI_WALKING,
+    pANI_RUNNING,
     pANI_SLIDING,
 };
 class Player : public Entity {
