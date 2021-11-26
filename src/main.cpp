@@ -9,6 +9,7 @@
 
 #include "level.h"
 #include "tools/map_editor/editor.h"
+#include "tools/player_editor/editor.h"
 #include "game.h"
 #include "util.h"
 
@@ -42,10 +43,14 @@ int main(int argc, char *argv[]) {
     InitWindow(screenWidth, screenHeight, "there is no bug");
     SetTargetFPS(40);
     EditorData e1 = InitEditor(1);
+    PEditorData e2 = InitPEditor("");
     ed = &e1;
 
     if (argc == 1) {
         loadLevel(1);
+    } else if (argc == 3 && strcmp(argv[1], "edit_animations") == 0) {
+        s = SCREEN_PLAYER_EDITOR;
+        e2 = InitPEditor(argv[2]);
     } else if (strcmp(argv[1], "edit") == 0) {
         ASSERT_ARGS_COUNT(3);
         string s = "assets/levels/";
@@ -71,6 +76,11 @@ int main(int argc, char *argv[]) {
         case SCREEN_EDITOR:
             BeginDrawing();
             RenderEditor(ed);
+            EndDrawing();
+            break;
+        case SCREEN_PLAYER_EDITOR:
+            BeginDrawing();
+            RenderPEditor(&e2);
             EndDrawing();
             break;
         }

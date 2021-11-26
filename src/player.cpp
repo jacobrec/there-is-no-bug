@@ -72,7 +72,7 @@ Player::Player(float x, float y) {
     lastWallJumped = GetTime();
     lastWalljumped = 0;
     isLeft = true;
-    
+
     anis.push_back(Animation("assets/art/player/standing")); // pANI_STANDING,
     anis.push_back(Animation("assets/art/player/jumping")); // pANI_FALLING,
     anis.push_back(Animation("assets/art/player/standing")); // pANI_CLIMBING,

@@ -8,6 +8,7 @@ using namespace std;
 
 enum Screen {
     SCREEN_EDITOR,
+    SCREEN_PLAYER_EDITOR,
     SCREEN_GAME,
 };
 
